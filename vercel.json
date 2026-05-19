@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-market-rates",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-inventory-velocity",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

@@ -1,129 +1,145 @@
-import { getTranslations } from "next-intl/server";
-import { formatMoney } from "@/lib/format-money";
-import { getSupplierInventoryInsightsPaged } from "@/lib/data/inventory-insights";
+import Link from 'next/link'
+import { Warehouse } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
+import { RetailerListPageHeader } from '@/components/retailer/retailer-list-page-header'
+import { InventoryInsightsFilterChips } from '@/components/supplier/inventory-insights-filter-chips'
+import { InventoryInsightsSummary } from '@/components/supplier/inventory-insights-summary'
+import { InventoryInsightsTable } from '@/components/supplier/inventory-insights-table'
+import { ListPagination } from '@/components/ui/list-pagination'
 import {
   DEFAULT_LIST_PAGE_SIZE,
   parseListPagination,
-} from "@/lib/data/pagination";
-import { ListPagination } from "@/components/ui/list-pagination";
+} from '@/lib/data/pagination'
+import { getSupplierInventoryInsightsPaged } from '@/lib/data/inventory-insights'
 
 export default async function SupplierInventoryInsightsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; pageSize?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; filter?: string }>
 }) {
-  const t = await getTranslations("InventoryInsightsPage");
-  const sp = await searchParams;
+  const t = await getTranslations('InventoryInsightsPage')
+  const sp = await searchParams
   const { page, pageSize } = parseListPagination(sp, {
     defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
-  });
+  })
 
-  const res = await getSupplierInventoryInsightsPaged({ page, pageSize });
+  const res = await getSupplierInventoryInsightsPaged({
+    page,
+    pageSize,
+    filter: sp.filter,
+  })
 
-  if ("error" in res) {
-    return <p className="text-sm text-red-600">{res.error}</p>;
+  if ('error' in res) {
+    return (
+      <div className="mx-auto max-w-3xl rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+        {res.error}
+      </div>
+    )
   }
 
   const {
     rows,
     totalValuation,
     reorderFlaggedCount,
+    lowStockCount,
     currencyCode,
     totalCount,
     totalPages,
     effectivePage,
-  } = res;
+    filter,
+  } = res
 
   const buildHref = (nextPage: number) => {
-    const p = new URLSearchParams();
-    if (nextPage > 1) p.set("page", String(nextPage));
-    if (pageSize !== DEFAULT_LIST_PAGE_SIZE)
-      p.set("pageSize", String(pageSize));
-    const qs = p.toString();
-    return qs ? `/supplier/inventory-insights?${qs}` : "/supplier/inventory-insights";
-  };
+    const p = new URLSearchParams()
+    if (filter !== 'all') p.set('filter', filter)
+    if (nextPage > 1) p.set('page', String(nextPage))
+    if (pageSize !== DEFAULT_LIST_PAGE_SIZE) p.set('pageSize', String(pageSize))
+    const qs = p.toString()
+    return qs ? `/supplier/inventory-insights?${qs}` : '/supplier/inventory-insights'
+  }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-slate-600">{t("subtitle")}</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 pb-10 sm:space-y-8">
+      <RetailerListPageHeader
+        icon={Warehouse}
+        title={t('title')}
+        subtitle={t('subtitle')}
+      >
+        <Link
+          href="/supplier/products"
+          className="inline-flex items-center rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:bg-muted"
+        >
+          {t('manageProducts')}
+        </Link>
+        <Link
+          href="/supplier/finance"
+          className="inline-flex items-center rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15"
+        >
+          {t('viewFinance')}
+        </Link>
+      </RetailerListPageHeader>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase text-slate-500">
-            {t("totalValuation")}
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {formatMoney(totalValuation, currencyCode)}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">{t("valuationHint")}</p>
-        </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase text-amber-900">
-            {t("reorderCandidates")}
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-950">
-            {reorderFlaggedCount}
-          </p>
-          <p className="mt-1 text-xs text-amber-900/90">{t("reorderHint")}</p>
-        </div>
-      </section>
+      <InventoryInsightsSummary
+        totalValuation={totalValuation}
+        reorderCount={reorderFlaggedCount}
+        lowStockCount={lowStockCount}
+        currencyCode={currencyCode}
+        labels={{
+          totalValuation: t('totalValuation'),
+          valuationHint: t('valuationHint'),
+          reorderCandidates: t('reorderCandidates'),
+          reorderHint: t('reorderHint'),
+          lowStock: t('lowStock'),
+          lowStockHint: t('lowStockHint'),
+          dataFreshness: t('dataFreshness'),
+        }}
+      />
 
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-4 py-3">
-          <h2 className="text-sm font-semibold text-slate-900">
-            {t("tableTitle")}
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">{t("tableHint")}</p>
+      <InventoryInsightsFilterChips
+        active={filter}
+        reorderCount={reorderFlaggedCount}
+        lowStockCount={lowStockCount}
+        labels={{
+          all: t('filterAll'),
+          reorder: t('filterReorder'),
+          lowStock: t('filterLowStock'),
+          noSales: t('filterNoSales'),
+          active: t('filterActive'),
+        }}
+      />
+
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-4 py-4 sm:px-6">
+          <h2 className="text-base font-semibold text-foreground">{t('tableTitle')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('tableHint')}</p>
         </div>
+
         {rows.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-slate-500">
-            {t("empty")}
-          </p>
+          <div className="px-4 py-14 text-center sm:px-6">
+            <p className="text-sm font-medium text-foreground">{t('emptyFiltered')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('emptyFilteredHint')}</p>
+            {filter !== 'all' ? (
+              <Link
+                href="/supplier/inventory-insights"
+                className="mt-4 inline-flex text-sm font-semibold text-primary underline-offset-2 hover:underline"
+              >
+                {t('clearFilter')}
+              </Link>
+            ) : (
+              <Link
+                href="/supplier/products"
+                className="mt-4 inline-flex text-sm font-semibold text-primary underline-offset-2 hover:underline"
+              >
+                {t('addProducts')}
+              </Link>
+            )}
+          </div>
         ) : (
-          <div className="max-h-[560px] overflow-auto">
-            <table className="min-w-full text-sm">
-              <thead className="sticky top-0 bg-slate-50 text-start text-xs font-medium uppercase text-slate-500">
-                <tr>
-                  <th className="px-4 py-2">{t("colProduct")}</th>
-                  <th className="px-4 py-2">{t("colVariation")}</th>
-                  <th className="px-4 py-2 text-end">{t("colStock")}</th>
-                  <th className="px-4 py-2 text-end">{t("colSold30")}</th>
-                  <th className="px-4 py-2 text-end">{t("colCover")}</th>
-                  <th className="px-4 py-2 text-end">{t("colLineVal")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((r) => (
-                  <tr key={r.variationId} className="hover:bg-slate-50">
-                    <td className="px-4 py-2 text-slate-900">
-                      {r.productName}
-                    </td>
-                    <td className="px-4 py-2 text-slate-600">
-                      {r.variationLabel ?? "—"}
-                    </td>
-                    <td className="px-4 py-2 text-end tabular-nums">
-                      {r.stock}
-                    </td>
-                    <td className="px-4 py-2 text-end tabular-nums">
-                      {r.unitsSold30d}
-                    </td>
-                    <td className="px-4 py-2 text-end tabular-nums">
-                      {r.coverDays != null
-                        ? `${r.coverDays} ${t("days")}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-end font-medium tabular-nums">
-                      {formatMoney(r.valuationLine, currencyCode)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="p-4 sm:p-6 sm:pt-4">
+            <InventoryInsightsTable rows={rows} currencyCode={currencyCode} />
           </div>
         )}
+
         <ListPagination
           page={effectivePage}
           totalPages={totalPages}
@@ -133,5 +149,5 @@ export default async function SupplierInventoryInsightsPage({
         />
       </section>
     </div>
-  );
+  )
 }
