@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { supabaseServer } from '@/lib/supabase/server'
 import { ListPagination } from '@/components/ui/list-pagination'
@@ -86,10 +85,6 @@ export default async function RetailerSearchPage({
   const catsParam = serializeCatsParam(selectedCats) || null
 
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const buildHref = (nextPage: number) => {
     const p = new URLSearchParams()

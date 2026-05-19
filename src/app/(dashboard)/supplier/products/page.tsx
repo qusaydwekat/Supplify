@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getLocale, getTranslations } from 'next-intl/server'
+import { requireRequestUserId } from '@/lib/auth/request-session'
 import { supabaseServer } from '@/lib/supabase/server'
 import { formatDateDayMonthYear, normalizeAppLocale } from '@/lib/format-datetime'
 import { cn } from '@/lib/utils'
@@ -20,13 +21,10 @@ export default async function SupplierProductsPage({ searchParams }: { searchPar
   const tCommon = await getTranslations('Common')
   const locale = normalizeAppLocale(await getLocale())
   const sp = await searchParams
+  const userId = await requireRequestUserId()
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const { data: supplier } = await supabase.from('suppliers').select('id').eq('user_id', user.id).maybeSingle()
+  const { data: supplier } = await supabase.from('suppliers').select('id').eq('user_id', userId).maybeSingle()
   if (!supplier) redirect('/retailer')
 
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)

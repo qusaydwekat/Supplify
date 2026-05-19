@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { requireRequestUserId } from '@/lib/auth/request-session'
 import { supabaseServer } from '@/lib/supabase/server'
 import { ProfileForm } from '@/components/profile/profile-form'
 import { SupplierProfileForm } from '@/components/profile/supplier-profile-form'
@@ -11,22 +11,19 @@ import {
 
 export default async function SupplierProfilePage() {
   const t = await getTranslations('ProfilePage')
+  const userId = await requireRequestUserId()
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const [{ data: profile }, { data: supplier }, { data: bankAccounts }] = await Promise.all([
     supabase
       .from('profiles')
       .select('name, business_name, phone, city, tax_id, commercial_registration, vat_registered, prefer_hijri')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle(),
     supabase
       .from('suppliers')
       .select('id, description, delivery_areas, logo_url, is_active, currency_code, marketplace_categories')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle(),
     supabase
       .from('supplier_bank_accounts')

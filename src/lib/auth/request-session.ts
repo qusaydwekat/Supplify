@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { supabaseServer } from '@/lib/supabase/server'
 import type { AppUserRole } from '@/lib/auth/require-admin'
 
@@ -33,4 +34,11 @@ export async function getRequestSession(): Promise<{ userId: string; role: AppUs
   const dbRole = row?.role
   if (!isAppRole(dbRole ?? null)) return null
   return { userId: user.id, role: dbRole }
+}
+
+/** Fast session user id (middleware headers); redirects when unauthenticated. */
+export async function requireRequestUserId(): Promise<string> {
+  const session = await getRequestSession()
+  if (!session) redirect('/login')
+  return session.userId
 }

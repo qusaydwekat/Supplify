@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { requireRequestUserId } from "@/lib/auth/request-session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { formatDateTimeShort, normalizeAppLocale } from "@/lib/format-datetime";
 import { formatMoney } from "@/lib/format-money";
@@ -35,16 +36,13 @@ export default async function SupplierDepositsInboxPage({
 }) {
   const t = await getTranslations("DepositProofsInbox");
   const locale = normalizeAppLocale(await getLocale());
+  const userId = await requireRequestUserId();
   const supabase = supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const { data: supplier } = await supabase
     .from("suppliers")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
   if (!supplier) redirect("/login");
 

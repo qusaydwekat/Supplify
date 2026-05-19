@@ -6,6 +6,7 @@ import { SupplierPaymentFilters } from '@/components/payments/supplier-payment-f
 import { ListPagination } from '@/components/ui/list-pagination'
 import { DEFAULT_LIST_PAGE_SIZE, parseListPagination } from '@/lib/data/pagination'
 import { convertBetween, loadCurrencyConversionState, roundMoney2 } from '@/lib/currency'
+import { requireRequestUserId } from '@/lib/auth/request-session'
 import { getSupplierPaymentHistory } from '@/lib/data/payments'
 import { supabaseServer } from '@/lib/supabase/server'
 
@@ -34,12 +35,12 @@ export default async function SupplierPaymentsPage({
   const conv = await loadCurrencyConversionState(supabase)
   const defaultAppCurrency = 'error' in conv ? 'USD' : conv.defaultCurrency
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data: supplier } = user
-    ? await supabase.from('suppliers').select('currency_code').eq('user_id', user.id).maybeSingle()
-    : { data: null }
+  const userId = await requireRequestUserId()
+  const { data: supplier } = await supabase
+    .from('suppliers')
+    .select('currency_code')
+    .eq('user_id', userId)
+    .maybeSingle()
   const storeCurrency = String((supplier as { currency_code?: string } | null)?.currency_code ?? defaultAppCurrency).toUpperCase()
 
   const pageTotalAmount =

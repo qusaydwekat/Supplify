@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { ListPagination } from '@/components/ui/list-pagination'
 import { MarketplaceCategoryFilterChips, parseSelectedCatsFromParams } from '@/components/retailer/marketplace-category-filter'
@@ -47,10 +46,6 @@ export default async function RetailerBrowseSuppliersPage({
   const selectedCats = parseSelectedCatsFromParams(sp.cats)
   const { page, pageSize } = parseListPagination(sp, { defaultPageSize: DEFAULT_MARKETPLACE_PAGE_SIZE })
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const categorySlugs = selectedCats.filter((x): x is MarketplaceCategorySlug => isMarketplaceCategorySlug(x))
   const includeUncategorized = selectedCats.includes(UNCATEGORIZED_FILTER)

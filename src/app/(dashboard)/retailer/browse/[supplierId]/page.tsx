@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { requireRequestUserId } from "@/lib/auth/request-session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { VARIATION_PUBLIC_COLUMNS } from "@/lib/utils";
 import { StorefrontCatalog } from "@/components/retailer/storefront-catalog";
@@ -60,11 +61,8 @@ export default async function RetailerSupplierStorefrontPage({
   const tCat = await getTranslations("MarketplaceCategories");
   const tReview = await getTranslations("Review");
   const { supplierId } = await params;
+  const retailerId = await requireRequestUserId();
   const supabase = supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const { data: supplierRows, error: sErr } = await supabase.rpc("get_marketplace_supplier", {
     p_supplier_id: supplierId,
@@ -87,7 +85,7 @@ export default async function RetailerSupplierStorefrontPage({
     .from("retailer_supplier_terms")
     .select("blocked")
     .eq("supplier_id", supplierId)
-    .eq("retailer_id", user.id)
+    .eq("retailer_id", retailerId)
     .maybeSingle();
 
   if (termsRow?.blocked) {
@@ -151,7 +149,7 @@ export default async function RetailerSupplierStorefrontPage({
   const { data: myOrders } = await supabase
     .from("orders")
     .select("id")
-    .eq("retailer_id", user.id);
+    .eq("retailer_id", retailerId);
 
   const orderIds = (myOrders ?? []).map((o) => o.id);
   let orderedProductIds: string[] = [];
@@ -166,7 +164,7 @@ export default async function RetailerSupplierStorefrontPage({
   const { data: deliveredOrders } = await supabase
     .from("orders")
     .select("id")
-    .eq("retailer_id", user.id)
+    .eq("retailer_id", retailerId)
     .eq("supplier_id", supplierId)
     .eq("status", "delivered");
 

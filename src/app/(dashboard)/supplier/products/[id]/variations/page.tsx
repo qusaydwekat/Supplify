@@ -1,19 +1,17 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { requireRequestUserId } from '@/lib/auth/request-session'
 import { supabaseServer } from '@/lib/supabase/server'
 import { VariationsTable, type VariationRow } from '@/components/products/variations-table'
 
 export default async function SupplierProductVariationsPage({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations('VariationsPage')
   const { id } = await params
+  const userId = await requireRequestUserId()
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const { data: supplier } = await supabase.from('suppliers').select('id').eq('user_id', user.id).maybeSingle()
+  const { data: supplier } = await supabase.from('suppliers').select('id').eq('user_id', userId).maybeSingle()
   if (!supplier) redirect('/retailer')
 
   const { data: productFull } = await supabase

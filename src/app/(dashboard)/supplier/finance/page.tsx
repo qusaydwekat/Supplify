@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getLocale, getTranslations } from 'next-intl/server'
+import { requireRequestUserId } from '@/lib/auth/request-session'
 import { supabaseServer } from '@/lib/supabase/server'
 import { PartnerStatementDownloads } from '@/components/supplier/partner-statement-downloads'
 import { ExpenseQuickForm } from '@/components/supplier/expense-quick-form'
@@ -93,13 +94,10 @@ export default async function SupplierFinancePage({
   const locale = normalizeAppLocale(await getLocale())
   const sp = await searchParams
 
+  const userId = await requireRequestUserId()
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return <p className="text-sm text-red-600">{t('unauthorized')}</p>
 
-  const { data: supplier } = await supabase.from('suppliers').select('id, currency_code').eq('user_id', user.id).maybeSingle()
+  const { data: supplier } = await supabase.from('suppliers').select('id, currency_code').eq('user_id', userId).maybeSingle()
   if (!supplier) return <p className="text-sm text-red-600">{t('notSupplier')}</p>
 
   const ccy = String((supplier as { currency_code?: string }).currency_code ?? 'USD')

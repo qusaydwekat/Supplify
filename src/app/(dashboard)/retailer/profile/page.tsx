@@ -1,20 +1,17 @@
-import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { requireRequestUserId } from '@/lib/auth/request-session'
 import { supabaseServer } from '@/lib/supabase/server'
 import { ProfileForm } from '@/components/profile/profile-form'
 
 export default async function RetailerProfilePage() {
   const t = await getTranslations('ProfilePage')
+  const userId = await requireRequestUserId()
   const supabase = supabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('name, business_name, phone, city, tax_id, commercial_registration, vat_registered, prefer_hijri')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .maybeSingle()
 
   return (
