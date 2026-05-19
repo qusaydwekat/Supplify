@@ -15,6 +15,7 @@ npm run test:all          # Coverage + E2E
 1. Copy env vars (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, etc.)
 2. Seed test users: `npx tsx src/tests/e2e/helpers/seed.ts`
 3. Run: `E2E_ENABLED=1 npm run test:e2e`
+   4
 
 ## Structure
 
