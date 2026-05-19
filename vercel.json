@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/refresh-inventory-velocity",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
