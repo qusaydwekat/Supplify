@@ -1,42 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateSupabaseSession } from "@/lib/supabase/middleware";
-import { createServerClient } from "@supabase/ssr";
-
-async function getUserRole(request: NextRequest, response: NextResponse) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return null;
-
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value)
-        );
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
-      },
-    },
-  });
-
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return null;
-
-  const { data: userRow } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", data.user.id)
-    .maybeSingle();
-  return userRow?.role ?? null;
-}
+import { resolveMiddlewareSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
-  const response = await updateSupabaseSession(request);
+  const { response, user, role } = await resolveMiddlewareSession(request);
 
   response.headers.set("x-next-pathname", url.pathname);
 
@@ -69,10 +36,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const role = await getUserRole(request, response);
-
-  if (!role) {
-    // Unauthenticated: always send root to login.
+  if (!role || !user) {
     if (isHomePage) {
       return NextResponse.redirect(new URL("/login", url.origin));
     }
@@ -118,5 +82,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

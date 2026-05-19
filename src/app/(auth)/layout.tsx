@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { redirect } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase/server'
+import { getRequestSession } from '@/lib/auth/request-session'
 
 const PASSWORD_FLOW_PATHS = ['/reset-password', '/email-verified']
 
@@ -11,15 +11,15 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const isPasswordFlow = PASSWORD_FLOW_PATHS.some((p) => pathname === p || pathname.endsWith(p))
 
   if (!isPasswordFlow) {
-    const supabase = supabaseServer()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (user) {
-      const { data: userRow } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle()
-      const role = (userRow?.role ?? 'retailer') as 'supplier' | 'retailer'
-      redirect(role === 'supplier' ? '/supplier' : '/retailer')
+    const session = await getRequestSession()
+    if (session) {
+      redirect(
+        session.role === 'admin'
+          ? '/admin'
+          : session.role === 'supplier'
+            ? '/supplier'
+            : '/retailer',
+      )
     }
   }
 
