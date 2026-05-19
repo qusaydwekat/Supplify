@@ -24,6 +24,9 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/lib/actions/auth'
+import type { SupplierNavBadges } from '@/lib/supplier-nav-badges'
+import { NavCountBadge } from '@/components/layout/nav-count-badge'
+import { useSupplierNavBadges } from '@/components/layout/use-supplier-nav-badges'
 
 type Role = 'supplier' | 'retailer'
 
@@ -47,16 +50,26 @@ type NavLabelKey =
   | 'cart'
   | 'myOrders'
 
-type NavItem = { href: string; labelKey: NavLabelKey; icon: React.ComponentType<{ className?: string }> }
+type NavItem = {
+  href: string
+  labelKey: NavLabelKey
+  icon: React.ComponentType<{ className?: string }>
+  badgeKey?: 'pendingOrders' | 'pendingDeposits'
+}
 
 const supplierNav: NavItem[] = [
   { href: '/supplier', labelKey: 'dashboard', icon: LayoutDashboard },
   { href: '/supplier/products', labelKey: 'products', icon: Package },
-  { href: '/supplier/orders', labelKey: 'orders', icon: ShoppingCart },
+  { href: '/supplier/orders', labelKey: 'orders', icon: ShoppingCart, badgeKey: 'pendingOrders' },
   { href: '/supplier/delivery-persons', labelKey: 'deliveryPersons', icon: Truck },
   { href: '/supplier/invoices', labelKey: 'invoices', icon: FileText },
   { href: '/supplier/payments', labelKey: 'payments', icon: CircleDollarSign },
-  { href: '/supplier/payments/deposits', labelKey: 'depositProofs', icon: CircleDollarSign },
+  {
+    href: '/supplier/payments/deposits',
+    labelKey: 'depositProofs',
+    icon: CircleDollarSign,
+    badgeKey: 'pendingDeposits',
+  },
   { href: '/supplier/ledger', labelKey: 'ledger', icon: BookOpen },
   { href: '/supplier/finance', labelKey: 'finance', icon: Wallet },
   { href: '/supplier/reports', labelKey: 'reports', icon: BarChart3 },
@@ -82,14 +95,16 @@ type Props = {
   role: Role
   userName: string
   businessName: string
+  supplierBadges?: SupplierNavBadges | null
   onNavigate?: () => void
   className?: string
 }
 
-export function Sidebar({ role, userName, businessName, onNavigate, className }: Props) {
+export function Sidebar({ role, userName, businessName, supplierBadges, onNavigate, className }: Props) {
   const pathname = usePathname()
   const t = useTranslations('Nav')
   const items = role === 'supplier' ? supplierNav : retailerNav
+  const liveBadges = useSupplierNavBadges(role === 'supplier' ? (supplierBadges ?? null) : null)
 
   return (
     <div className={cn('flex h-full min-h-0 flex-col', className)}>
@@ -107,6 +122,18 @@ export function Sidebar({ role, userName, businessName, onNavigate, className }:
         {items.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
           const Icon = item.icon
+          const badgeCount =
+            item.badgeKey && liveBadges
+              ? item.badgeKey === 'pendingOrders'
+                ? liveBadges.pendingOrders
+                : liveBadges.pendingDeposits
+              : 0
+          const badgeLabel =
+            item.badgeKey === 'pendingOrders'
+              ? t('badgePendingOrders', { count: badgeCount })
+              : item.badgeKey === 'pendingDeposits'
+                ? t('badgePendingDeposits', { count: badgeCount })
+                : ''
           return (
             <Link
               key={item.href}
@@ -118,7 +145,10 @@ export function Sidebar({ role, userName, businessName, onNavigate, className }:
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="leading-snug">{t(item.labelKey)}</span>
+              <span className="min-w-0 flex-1 leading-snug">{t(item.labelKey)}</span>
+              {item.badgeKey ? (
+                <NavCountBadge count={badgeCount} label={badgeLabel} active={isActive} />
+              ) : null}
             </Link>
           )
         })}

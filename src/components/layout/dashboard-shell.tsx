@@ -5,15 +5,17 @@ import { X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
+import type { SupplierNavBadges } from '@/lib/supplier-nav-badges'
 
 type Props = {
   role: 'supplier' | 'retailer'
   userName: string
   businessName: string
+  supplierBadges?: SupplierNavBadges | null
   children: React.ReactNode
 }
 
-export function DashboardShell({ role, userName, businessName, children }: Props) {
+export function DashboardShell({ role, userName, businessName, supplierBadges, children }: Props) {
   const [mobileNav, setMobileNav] = useState(false)
   const t = useTranslations('Header')
 
@@ -31,7 +33,12 @@ export function DashboardShell({ role, userName, businessName, children }: Props
   return (
     <div className="flex min-h-dvh bg-background">
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-border bg-card md:flex">
-        <Sidebar role={role} userName={userName} businessName={businessName} />
+        <Sidebar
+          role={role}
+          userName={userName}
+          businessName={businessName}
+          supplierBadges={supplierBadges}
+        />
       </aside>
 
       {mobileNav ? (
@@ -64,6 +71,7 @@ export function DashboardShell({ role, userName, businessName, children }: Props
                 role={role}
                 userName={userName}
                 businessName={businessName}
+                supplierBadges={supplierBadges}
                 onNavigate={() => setMobileNav(false)}
               />
             </div>

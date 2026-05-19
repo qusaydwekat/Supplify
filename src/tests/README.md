@@ -1,5 +1,7 @@
 # Supplify test suite
 
+Tests run locally only (not in CI or Vercel deploy). Production builds use `next build`, which excludes this folder via `tsconfig.json`.
+
 ## Commands
 
 ```bash

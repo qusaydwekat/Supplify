@@ -96,6 +96,8 @@
     "signOut": "Sign out",
     "account": "Account",
     "brand": "Supplify",
+    "badgePendingOrders": "{count, plural, one {# new order request} other {# new order requests}}",
+    "badgePendingDeposits": "{count, plural, one {# pending deposit slip} other {# pending deposit slips}}",
     "adminPanel": "Admin",
     "adminDashboard": "Dashboard",
     "adminUsers": "Users & roles",
