@@ -1,0 +1,875 @@
+30–60 days
+30–60 days
+60–90 days
+60–90 days
+English
+PDF or image, up to 5 MB
+SKU
+you@example.com or +962791234567
+{count, plural, one {# product line updated} other {# product lines updated}}
+{count} reviews
+{count} products
+{count} suppliers
+{count} results
+{invoiceNumber, select, null {A payment was recorded on your invoice.} other {A payment was recorded for {invoiceNumber}.}}
+{invoiceNumber, select, null {A new invoice is ready to view.} other {Invoice {invoiceNumber} is ready to view.}}
+{number} · {bank} · {branch} · {date}
+{preview, select, null {A file was attached to an order conversation.} other {{preview}}}
+{product} — {variation} is at {stock} units (threshold {threshold}).
+{qty} × {price} each
+× to global price
+Latest audit
+Recent orders
+Last updated
+Last synced
+Other
+Enter the code sent by SMS, then choose your password.
+Enter the 6-digit code
+Enter a valid email address
+Enter your email and we will send you a link to choose a new password.
+Enter a valid date
+Enter a valid positive amount.
+Official branch codes and phone numbers change — verify against the Palestine Monetary Authority directory when needed.
+The single global price basis: reporting currency and multipliers for ILS, USD, and JOD. Catalog prices stay in each supplier’s currency; reporting converts here. Sync live market rates or fine-tune manually.
+Exchange rates to global price
+Live market exchange rates
+City names separated by commas.
+Delivery persons
+Issue invoices from delivered orders and record payments.
+SKUs with meaningful recent sales and fewer than about 14 days of cover at current velocity.
+SKUs that need review
+Items from the same category you have not ordered yet.
+Add your first delivery person to assign them to shipments.
+Add your own banks or edit any bank below — including directory banks — to fix spelling, Arabic names, or branch phones.
+Add at least one installment line with a due date and positive amount.
+Add to cart
+Top products (table)
+Top products by revenue
+Top retailers by balance due
+Under 30 days
+90+ days
+Over 90 days
+You
+Create an invoice from a delivered order. One invoice per order.
+Create a product with optional variants.
+This supplier has paused new orders for your account. Please contact them directly to continue purchasing.
+days
+Grace days (collection / reminders)
+Net days
+Created
+Action
+Actions
+Gross revenue
+Gross profit
+Line total
+Order total
+Total orders
+Invoice total
+Total invoiced
+Total collected
+Total paid
+Total invoiced (ledger)
+Ledger totals and order counts.
+Hide adjustments
+Operate the marketplace from one place
+Manage catalog & stock
+Manage catalog and stock.
+Manage variations
+Manage users & roles
+Platform admin
+Manage the people who deliver your orders.
+Send
+Submit review
+Send reset link
+Send verification code
+Attach file
+Remove
+Credit note
+Debit note
+Issued to
+Issued from
+Add bank
+Add person
+Add delivery person
+Add row
+Add branch
+Add installment
+Add manual entry
+Add variation
+Add product
+Resend code
+Reorder
+Reorder from last delivery
+Reassign
+Reassign delivery person
+Reset your password
+Close
+Close menu
+Clear cart and continue
+Cancel
+Cancel order
+To
+To (optional)
+To date
+If an account exists for that email, you will receive a message shortly.
+Create account
+Create invoice
+Create invoices from delivered orders
+Create product
+Sign up
+Create your account
+Create invoice
+Search by email, name, business, or phone. Assign supplier, retailer, or admin roles—changes apply across the platform.
+Search by supplier or city, or jump straight to product names and categories.
+Search city or business name
+Find suppliers by business name or city.
+Search product or SKU…
+Start the conversation
+Revenue trend
+Spend trend
+Call
+Choose a bank
+Choose bank…
+Select retailer…
+Choose a branch
+Choose branch…
+Select a delivery person first.
+Choose a strong password for your account.
+Choose who will deliver this shipment.
+Shortcuts
+Optional
+Go to invoices
+Ask about delivery or attach a document. The other party gets a sound alert right away.
+Use international format with a + prefix (e.g. +962791234567).
+Branch name (English)
+Branch name (Arabic)
+Variation name is required
+Product name
+Business or contact name
+Business name
+Business name is required
+Find suppliers and order in minutes
+Find suppliers and products across the marketplace.
+Default
+Type a message…
+Type to filter…
+Last months with fulfilled orders only.
+Line items
+Top rated
+Best match
+Total
+New total
+Previous total
+Admin
+Notifications
+Revenue
+Revenue (journal)
+Monthly revenue (last 12 months)
+Revenue, cost, and margin from fulfilled orders.
+Revenue, receivables, and order pipeline.
+Credit & trade terms
+Monthly trend
+Due date
+Due in (days)
+Name
+Name (A–Z)
+Name (English)
+Name (Arabic)
+Name or description
+Full name
+Full name is required
+Search products instead
+Search suppliers instead
+Email
+Email, name, business, or phone
+Email or phone
+Email
+Email (optional)
+Category
+Bank
+Line items
+Banks
+Banks & branches
+Directory banks, branches, cheque metadata
+Retailer
+Date
+Next
+Delivery
+Delivery: {areas}
+Label
+Category
+Cover
+Details
+Reports
+Overall rating
+Reviews
+Cost
+Cost (private)
+Navigation
+Communication
+Status
+Minimum
+Minimum order quantity
+Minimum order is {qty}
+Event
+Entries oldest to newest. Invoices increase the balance (red); payments decrease it (green). The running balance is your net position in this view.
+SKU movement & valuation
+Account
+Ledger vs journals
+Role
+Accounts receivable (journal)
+Receivables by retailer
+Profit
+Profit and margin
+Message
+Balance
+Running balance
+Outstanding balance
+No.
+Previous
+Price
+Global price & FX
+Default price and stock
+Price: high to low
+Price: low to high
+Cart
+Street, building, area, landmark…
+Shipment is on the way. Contact your supplier for delivery details.
+Logo
+Net in the ledger (all suppliers)
+Page {page} of {pages} ({total} total)
+Rows with stock under 10 are highlighted.
+Party
+Method
+Order
+Order preparing
+Orders
+Orders that need your attention and what you owe.
+Orders you placed with suppliers.
+Orders received from retailers.
+Orders by status
+Orders by stage
+Ordering is paused
+Count
+Arabic
+Age
+Currency
+Address
+Back to orders
+Back to invoices
+Back to sign in
+Back to reports
+Back to list
+Back to product
+Invoice
+Bill to: {name}
+Sort by revenue, profit, or margin. Export CSV for spreadsheets.
+Branch
+Branches
+Invoices
+Invoices issued by your suppliers.
+Invoices issued by your storefront.
+Open invoices
+Invoices by status
+Invoices minus payments in this view.
+Billing
+Menu
+Values stored in the database. Changing enums requires a migration and deploy.
+All
+Quantity
+qty {from} → {to}
+Quantity sold
+Language
+Finance
+Finance
+Amount
+Amount applied to invoice
+Remaining
+Storefront active
+Collected
+Variation
+Variations
+Scheduled
+Subtotal
+Selected
+Stock
+Paid
+Payments
+Payments your suppliers recorded on your invoices (read only).
+Recorded payments
+City
+Reference
+Reference / details
+Outstanding
+Outstanding (ledger)
+Outstanding:
+Users
+Users & roles
+Information retailers see when browsing your store.
+Invoiced
+Invoiced (ledger)
+Invoiced versus collected from the ledger by calendar month.
+Invoiced vs collected — last 6 months
+Invoiced vs paid — last 6 months
+Profile
+Account profile
+Product
+Products
+Products (this page)
+Supplier
+Supplier: {name}
+Suppliers
+Business
+Business, name, or email
+Business, name, email, or city
+Active (this page)
+Type
+Phone
+Phone / numbers
+Margin %
+Units sold
+Description
+Description (optional)
+Time
+Please wait before requesting another code.
+This link has expired or is invalid. Request a new reset link.
+Join as a supplier or retailer and set up your business profile.
+In reference currency ({code})
+Waiting for the retailer to confirm updated lines and totals.
+Search
+Search delivery persons…
+Search products
+Search users and assign roles
+Start preparing
+After
+Based on {count} reviews
+Bank
+Order line items
+Palestine banks & branches
+By {name}
+Account details and how retailers see your store.
+Invalid email/phone or password
+Cheque details
+Your personal and business details.
+Your personal and business contact information.
+Your details and mobile number
+Confirm reassignment
+Confirm changes
+Place order
+Confirm updated order
+Confirm password
+Confirm and ship
+Retailer
+Retailer (account type)
+Issue date
+Due date
+Joined
+Cheque date
+Cheque date is required
+Track issued and open invoices
+Track received payments
+Automated sync also runs once daily at 06:00 UTC when deployment cron is configured (same endpoint as other scheduled jobs; uses CRON_SECRET).
+Retailers
+Active retailers
+Retailers with at least one order.
+Preparing or shipping
+Needs accept, reject, or adjust
+Update password
+Define installment schedule
+Warn only
+Check your inbox to confirm your account, then sign in.
+Profit analysis
+Profit and margin analysis →
+Bank transfer
+Sort
+Sign out
+Sign in
+Record payment
+Record expense
+Unmute notification sounds
+Export CSV
+Browse suppliers
+Browse all suppliers
+Filter
+Filter retailer accounts by business, contact, email, or city.
+Filter by business, contact, or email. Read-only directory of supplier storefronts.
+Filter by event type. Read-only trail of important platform actions.
+Filter by city
+Filter by supplier
+Filter by retailer
+Filter and inspect platform events
+Exact match
+Apply
+Apply filters
+Edit
+Edit bank
+Adjust order
+Edit branch
+Edit product
+Edit phone or details
+Edit delivery person
+Could not load: {details}
+Could not save
+Could not load statistics
+Could not load banks ({details}).
+Could not load report: {details}
+Could not load ledger: {details}
+Could not load products
+Could not load products: {message}
+Could not load suppliers
+Could not load suppliers: {message}
+Could not load profit report: {details}
+No bank directory loaded.
+We couldn’t load a detailed diff (audit unavailable). Check the line items list — it already shows the supplier’s latest figures — then confirm below.
+Deactivate
+Comment (optional)
+Mark all as read
+Mark as shipped
+Mark as delivered
+Delivery instructions, PO number, etc.
+Product breakdown
+Breakdown by retailer
+Activate
+Your review
+Cost of goods
+Purchase or production cost. Not shown to retailers.
+Your cost
+Review submitted
+Message sent
+Order placed
+Verification code sent.
+Code sent again.
+Order cancelled
+This order was cancelled.
+Account created
+Invoice created
+Variation created
+Product created
+Email verified
+Delivered
+Saved
+Shipped
+Order confirmed
+Your email address has been confirmed.
+Status updated
+Role updated
+Cart updated from your last order
+Cart updated from this order
+Logo updated
+Order updated
+Profile updated
+Product updated
+Delivery person updated
+Password updated. You can sign in now.
+Supplier profile updated
+Delivery person updated
+Your delivery person has been updated: {name} — {phone}
+Signed in
+Payment recorded
+Expense recorded
+Payment recorded
+Order delivered
+Your order has been delivered.
+Delivery person deactivated
+Order marked shipped
+Order marked delivered
+Delivery person activated
+Variation deleted
+Product deleted
+Delivery person deleted
+Market rates saved
+Rate saved
+Entry saved
+Variation saved
+Installment schedule saved
+Delivery person saved
+Trade terms saved
+Global price currency saved
+Order rejected
+This order was rejected.
+Your order has been shipped. Delivery person: {name} — {phone}
+Order accepted
+Your order has been accepted and is being prepared.
+Order marked as shipped
+Added to cart
+Added to cart
+Low stock alert
+Download
+Download CSV
+Download Excel
+Download PDF
+Download Statement
+Status breakdown of your invoices
+All-time breakdown by status
+Used when recording cheque payments. Seed list reflects major PMA-sector banks; add your own banks or branches if something is missing.
+Used for product and invoice prices. Exchange rates must be available.
+Used for orders, invoices, and how suppliers see you.
+Placing order…
+Submitting…
+Creating…
+Updating…
+Loading…
+Saving…
+Uploading…
+Syncing…
+Your order is being prepared.
+Signing in…
+Sending…
+Saving…
+Installment schedule
+New to Supplify?
+Try a supplier name, city, product, or category…
+Try the Products tab or use different keywords.
+Try the Suppliers tab or use different keywords.
+All suppliers
+Product quality
+Order status
+Invoice health
+Current (<30d)
+Something went wrong
+Set credit limits, payment-term defaults, and blocks per retailer. Exposure = ledger balance plus uninvoiced active orders plus the order being placed. Leave credit limit empty to stop enforcing a cap.
+Delete
+Delete {name}? This cannot be undone.
+Delete bank
+Delete product
+Delete this bank and all its branches?
+Delete this branch?
+Delete this variation?
+Delete this product? This cannot be undone.
+Fast movers — low cover
+Retailer accounts
+Your account
+Your account is not a supplier profile.
+By revenue
+By profit
+By margin %
+Invoiced vs collected vs outstanding share.
+Save
+Save bank
+Save changes (marked as modified)
+Save changes
+Save schedule
+Save payment
+Save price and stock
+Save terms
+Save branch
+Save entry
+Save expense
+Save product
+Save supplier profile
+Updated
+Ledger
+Your full ledger across suppliers
+Partner ledger
+Full accounting ledger
+Payment on invoice {invoice}: {amount} ({method})
+Banks directory
+Inventory insights
+Review line items before placing your order.
+Review unpaid invoices and follow up with retailers.
+Happy with the summary above and the order total? Confirm to accept this version.
+Connect suppliers and retailers with orders, invoices, payments, and stock on one platform.
+New order message
+Ledger balance
+Running balance from the legacy partner ledger, in your supplier currency ({code}).
+Reject
+Block order
+Upload new logo
+Cheque number
+Cheque number is required
+Invoice # or retailer name
+Branch no.
+Invalid phone (use international format, e.g. +962791234567)
+SKU
+SMS code
+Verification code and password
+Quick links
+Supplify
+Audit log
+Commercial audit trail
+Payment log
+Running record of what you owe. A positive balance means more invoices than payments in the selected range.
+Sign in to manage orders, invoices, and your store.
+Delivery speed
+30-day sales velocity, rough stock cover, and line-level inventory valuation.
+Selling price
+Unit price
+unit {from} → {to}
+Credit limit
+Credit limit (empty = no limit)
+Your cart has items from {from}. Clear the cart and add items from {to}?
+Your cart is empty.
+Your cart is empty. Browse suppliers to add products.
+An online marketplace between suppliers and retailers
+B2B marketplace
+This order would exceed your credit limit with this supplier (limit {limit}, projected exposure {projected}). Pay down open invoices or ask the supplier to adjust your limit.
+Redirecting to sign in in {seconds}…
+Share your experience with this supplier…
+Your delivery person
+Assigned delivery person
+New delivery person
+Chart slices scale to total invoiced when available; otherwise collected + outstanding.
+Terms for {name}
+Trade terms
+Trade terms & credit
+Thank you for your feedback!
+Cheque
+Issued
+Issued or partially paid
+Net operating income (MTD, journals)
+Net profit
+Net of invoices and payments
+Partner ledger net
+Net ledger balance per retailer.
+Product image
+Print
+New order
+Uninvoiced orders
+Pending orders
+Orders in progress
+Delivered orders awaiting invoices
+Fulfilled orders only (accepted, preparing, shipped, delivered).
+Active orders
+Orders this month
+My orders
+Your order is on its way!
+Ordered before
+Across all variations in your catalogue.
+Supplier changed line items or unit prices
+Showing {start}–{end} of {total} · Page {page} of {pages}
+View order
+View related order
+View all
+View payments
+View and manage all orders
+Payment currency
+Global price currency
+Global price currency (ISO 4217)
+Global price currency & exchange rates
+Global price currency and live FX sync
+Store currency
+When projected exposure exceeds limit
+When an order was accepted, we store unit cost on the line. If that snapshot is zero, cost and profit use your current variation cost so reports stay useful after you add costs.
+Once you have orders or ledger activity with a retailer, download CSV, PDF, or Excel here.
+Out of stock
+Unpaid or partial; aging from issue date.
+Unauthorized
+Inactive
+Inactive ({count})
+Change quantities or unit prices. The retailer must confirm before continuing.
+Invoice
+New invoice
+Open
+Open cart
+Open orders
+Open invoices
+Open storefront
+Open ledger
+Limit enforcement
+New branch
+Failed
+Upload failed
+Upload failed (network or file too large). Try a smaller image.
+Overdue unpaid invoices: {count}
+Open invoices
+{name} adjusted quantities or prices on this order. Compare before vs after, then confirm.
+This supplier has blocked new orders for your account. Contact them to resolve.
+Before
+Accept
+You may also like
+Split the invoice into dated installments. Scheduled amounts must equal the invoice total.
+Bank and branch lists are maintained by the platform administrator.
+Pending
+Pending or awaiting your confirmation
+Preparing
+In fulfilment
+PostgreSQL enums (reference)
+Line value
+Inventory valuation (cost × stock)
+Automatic entries from invoices and payments. Running balance for the selected range.
+Rate this order
+Low margin catalog (under 15%)
+Mute notification sounds
+Partner account statements
+All roles
+All types
+All categories
+All statuses
+All methods
+All payments you recorded on invoices, newest first.
+All suppliers
+All retailers
+Each segment is a share of all orders. Hover a color for the count.
+Password
+Password must be at least 8 characters
+New password
+Passwords do not match
+No
+No non-zero balances.
+No further supplier actions in this state.
+No notifications yet.
+No fulfilled order lines yet.
+No monthly profit data yet.
+No sales data yet for fulfilled orders.
+No sales data yet.
+No reviews yet.
+No buyable variations.
+No data
+No catalogue rows found.
+No ledger entries yet.
+No orders yet
+No orders yet.
+No delivered orders awaiting an invoice. Complete and deliver an order first.
+No invoices yet.
+No products yet. Add your first product.
+No products match this search.
+No messages yet.
+No audit rows yet.
+No image
+No orders yet.
+No branches yet.
+No open invoices.
+No active variations under 15% margin.
+No products match the filter.
+No results
+No retailer activity yet.
+Editing locks once the first payment is recorded.
+You cannot remove your own administrator role here.
+None
+No delivery persons yet
+No delivery persons yet. Add one to continue.
+No banks match.
+No retailers yet. Trade terms appear after a retailer places an order or appears on your ledger.
+No logo
+Nothing to add to cart
+Nothing to add to the cart
+No branches match — try another bank.
+Insufficient stock to confirm (need {need}, have {have}). Contact the supplier.
+Insufficient stock for one or more items (need {need}, have {have}).
+No suppliers match your search.
+No suppliers match this search.
+You have {count} delivered orders that are not invoiced yet.
+Already have an account?
+You have received a new order.
+You have 1 delivered order that is not invoiced yet.
+You have already reviewed this order
+Per unit
+Not synced from market yet.
+No payments recorded yet. Record payments from the invoice.
+No payments recorded on your invoices yet. Open balances appear on invoices and the ledger.
+Snapshot
+Has variations
+for this order.
+Dashboard
+Supplier dashboard
+Retailer dashboard
+Responsive dashboard with live counts, order and invoice pipelines, audit highlights, and shortcuts.
+What your supplier changed
+Live
+Sold (30d)
+Overdue open
+Overdue
+Overdue (payment)
+Active variations priced close to cost — review pricing.
+e.g. 5000
+e.g. order, invoice, payment
+Example: Riyadh, Jeddah, Dammam
+Sum scheduled
+Total for this page
+Order conversation
+Private thread between you and the other party on this order. Messages appear instantly.
+Blocked
+Low stock
+Low stock (< 10 units)
+Low stock (< 10)
+Low stock (this page)
+Low stock only
+Low stock: consider restocking.
+Default payment terms (days)
+Paid toward
+Paid
+Partially paid
+Review products
+Sorted by units sold (last 30 days). Cover divides stock by average daily units sold.
+Reference / note
+Enums reference
+Enums reference
+Welcome back
+Attachment (optional)
+Rejected
+Control center
+Sync live rates
+Platform admins
+Due in the next 7 days: {count}
+Clear
+Clear filters
+Operating expenses
+Operating expenses, journal snapshots, and shortcuts to profitability.
+Modified
+Delivery information is not available. Please contact your supplier.
+Accepted
+Recommended
+Notes
+Notes (optional)
+Internal notes
+Notes for the supplier (optional)
+Notes from the retailer
+Your notes
+Optional note (in addition to cheque details below)
+Cancelled
+From
+From (optional)
+From {price}
+of {total} total orders
+Directory
+Directory bank — you can still update names
+From date
+Actor
+From: {name}
+Delivery areas
+Delivery areas:
+New product
+Block this retailer from placing new orders
+Supplier
+Different supplier
+Results for “{q}”
+Collection rate
+Forgot password?
+Payment activity
+Your business
+Active
+Active ({count})
+Search scope
+Operational overview with pipelines and recent activity. Use the menu on mobile to reach every admin section.
+Platform overview
+Balance overview
+Overview of orders, stock risk, and receivables.
+Yes
+Cash
+Event type contains
+Account type
+Entry type
+Profit margin
+This field is required
+This order is delivered.
+This product has one price and stock. Enable “Has variations” on the product to manage multiple SKUs here.
+Only suppliers can access this page.
+Supplier updates are waiting — review the change summary on the right, then confirm.
+WhatsApp
+Supplier storefront
+1 unit of currency × multiplier = value in the global price currency. Sync pulls public market feeds; overrides are always possible.
+Mark order as shipped
+Updated · {when}
+Must be ILS, USD, or JOD — aligned with catalogs and invoices.
+Logo must be {maxMb} MB or less
+You must be signed in.
+Fetches mid-market quotes (open.er-api first, Frankfurter ECB as fallback) and writes multipliers for all supported currencies. Run after changing global price currency if needed.
+Please select an overall rating
+Sign in to continue.
+Uses chart-of-accounts journals for the current calendar month.
+You can cancel the order while it is pending.
+Uploaded after the product is created.
+Recorded automatically for disputes: supplier line changes and recorded payments.
+…
+↑ {amount} vs before
+↓ {amount} vs before

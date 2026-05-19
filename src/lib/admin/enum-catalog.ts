@@ -1,0 +1,82 @@
+/** Read-only catalog of PostgreSQL enums used by Supplify — changing enums requires a DB migration. */
+
+export const ENUM_CATALOG = [
+  {
+    name: 'user_role',
+    schema: 'public',
+    values: ['supplier', 'retailer', 'admin'],
+    note: 'Login routing and dashboards; promote admins via SQL or Admin → Users.',
+  },
+  {
+    name: 'order_status',
+    schema: 'public',
+    values: [
+      'pending',
+      'accepted',
+      'modified',
+      'rejected',
+      'preparing',
+      'shipped',
+      'delivered',
+      'cancelled',
+    ],
+    note: 'Order lifecycle; transitions enforced in application code.',
+  },
+  {
+    name: 'invoice_status',
+    schema: 'public',
+    values: ['issued', 'paid', 'partial', 'overdue'],
+    note: 'Maintained by triggers when payments are recorded.',
+  },
+  {
+    name: 'invoice_type',
+    schema: 'public',
+    values: ['proforma', 'final'],
+    note: 'Invoice document type.',
+  },
+  {
+    name: 'payment_method',
+    schema: 'public',
+    values: ['cash', 'bank', 'cheque', 'other'],
+    note: 'Recorded payments on invoices.',
+  },
+  {
+    name: 'supplier_marketplace_category',
+    schema: 'public',
+    values: [
+      'food_beverages',
+      'clothing_fashion',
+      'pharmacy_health',
+      'electronics_tech',
+      'home_garden',
+      'beauty_personal_care',
+      'automotive',
+      'office_school',
+      'sports_hobbies',
+      'general_merchandise',
+    ],
+    note: 'Supplier industry tags for retailer browse/search; stored as array on suppliers.',
+  },
+  {
+    name: 'ledger_entry_type',
+    schema: 'public',
+    values: ['invoice', 'payment', 'credit_note', 'debit_note'],
+    note: 'Ledger row classification.',
+  },
+  {
+    name: 'notification_type',
+    schema: 'public',
+    values: [
+      'new_order',
+      'order_updated',
+      'invoice_issued',
+      'payment_recorded',
+      'low_stock',
+      'order_message',
+      'overdue_invoice',
+      'delivery_assigned',
+      'cheque_bounced',
+    ],
+    note: 'In-app notifications and routing.',
+  },
+] as const
