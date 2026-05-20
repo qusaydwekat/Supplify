@@ -7,6 +7,7 @@ import { InvoiceLineItems } from '@/components/invoices/invoice-line-items'
 import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge'
 import { InvoicePaymentsList } from '@/components/invoices/invoice-payments-list'
 import { RecordPaymentForm } from '@/components/invoices/record-payment-form'
+import { InvoicePdfDownloadButton } from '@/components/invoices/invoice-pdf-download-button'
 import { WhatsAppShareButton } from '@/components/share/whatsapp-share-button'
 import { loadCurrencyConversionState } from '@/lib/currency'
 import { formatDateMedium, formatDateTimeShort, normalizeAppLocale } from '@/lib/format-datetime'
@@ -76,12 +77,13 @@ export default async function SupplierInvoiceDetailPage({ params }: { params: Pr
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <InvoiceStatusBadge status={inv.status} dueDate={inv.due_date} />
-          <a
-            href={`/api/invoices/${inv.id}/pdf`}
-            className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 hover:bg-slate-50"
+          <InvoicePdfDownloadButton
+            invoiceId={inv.id}
+            invoiceNumber={inv.invoice_number}
+            className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-60"
           >
             {t('downloadPdf')}
-          </a>
+          </InvoicePdfDownloadButton>
           <WhatsAppShareButton
             message={t('whatsappShareMessage', {
               invoice: inv.invoice_number,

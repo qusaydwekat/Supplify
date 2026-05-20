@@ -8,6 +8,7 @@ import { RetailerDepositProofsSection } from '@/components/invoices/retailer-dep
 import { RetailerInvoiceBalanceHero } from '@/components/invoices/retailer-invoice-balance-hero'
 import { SubmitDepositProofForm } from '@/components/invoices/submit-deposit-proof-form'
 import { SupplierBankAccountsList } from '@/components/invoices/supplier-bank-accounts-list'
+import { InvoicePdfDownloadButton } from '@/components/invoices/invoice-pdf-download-button'
 import { WhatsAppShareButton } from '@/components/share/whatsapp-share-button'
 import { loadCurrencyConversionState } from '@/lib/currency'
 import { listDepositProofsForInvoice } from '@/lib/data/deposit-proofs-retailer'
@@ -66,12 +67,13 @@ export default async function RetailerInvoiceDetailPage({ params }: { params: Pr
       />
 
       <div className="flex flex-wrap gap-2">
-        <a
-          href={`/api/invoices/${inv.id}/pdf`}
-          className="inline-flex h-10 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted"
+        <InvoicePdfDownloadButton
+          invoiceId={inv.id}
+          invoiceNumber={inv.invoice_number}
+          className="inline-flex h-10 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:opacity-60"
         >
           {t('downloadPdf')}
-        </a>
+        </InvoicePdfDownloadButton>
         <WhatsAppShareButton
           message={t('whatsappShareMessage', {
             invoice: inv.invoice_number,
