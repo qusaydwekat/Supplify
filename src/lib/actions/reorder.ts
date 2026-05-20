@@ -2,6 +2,7 @@
 
 import { supabaseServer } from '@/lib/supabase/server'
 import { VARIATION_PUBLIC_COLUMNS } from '@/lib/utils'
+import { listPriceTiersForVariations, resolveUnitPrice } from '@/lib/data/products/price-tiers'
 import type { CartItem } from '@/types/cart'
 import { orderRowsNewestFirst } from '@/lib/data/order-sort'
 
@@ -58,6 +59,7 @@ async function cartItemsFromOrderLines(
   const { data: prods } = await supabase.from('products').select('id, name, supplier_id, is_active').in('id', productIds)
   const prodMap = new Map((prods ?? []).map((p) => [p.id, p]))
   const varMap = new Map(vars.map((v) => [v.id, v]))
+  const tierMap = await listPriceTiersForVariations(variationIds)
   const warnings: string[] = []
   const items: CartItem[] = []
 
@@ -107,7 +109,9 @@ async function cartItemsFromOrderLines(
       productName: prod.name,
       variationName: line.variation_name,
       quantity: useQty,
-      unitPrice: Number(v.price),
+      unitPrice: resolveUnitPrice(Number(v.price), tierMap.get(v.id) ?? [], useQty),
+      basePrice: Number(v.price),
+      priceTiers: tierMap.get(v.id) ?? [],
     })
   }
 

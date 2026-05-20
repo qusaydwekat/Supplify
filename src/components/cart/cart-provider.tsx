@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import type { CartItem } from '@/types/cart'
+import { resolveUnitPrice } from '@/lib/pricing/resolve-unit-price'
 import { supabaseBrowser } from '@/lib/supabase/client'
 
 const STORAGE_PREFIX = 'supplify-cart-v1'
@@ -79,6 +80,13 @@ function saveToStorage(
 ) {
   if (typeof window === 'undefined') return
   localStorage.setItem(key, JSON.stringify({ items, supplierId, supplierLabel, supplierCurrency }))
+}
+
+function withResolvedPrice(item: CartItem, quantity: number): CartItem {
+  const base = item.basePrice ?? item.unitPrice
+  const tiers = item.priceTiers ?? []
+  const unitPrice = tiers.length ? resolveUnitPrice(base, tiers, quantity) : item.unitPrice
+  return { ...item, quantity, unitPrice }
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -166,7 +174,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setSupplierId(item.supplierId)
         setSupplierLabel(nextLabel)
         setSupplierCurrency(currencyCode)
-        setItems([{ ...item, quantity: item.quantity }])
+        setItems([withResolvedPrice({ ...item, quantity: item.quantity }, item.quantity)])
         return
       }
 
@@ -183,14 +191,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const idx = prev.findIndex((i) => i.variationId === item.variationId)
         if (idx >= 0) {
           const next = [...prev]
-          next[idx] = {
-            ...next[idx],
-            quantity: next[idx].quantity + item.quantity,
-            unitPrice: item.unitPrice,
-          }
+          next[idx] = withResolvedPrice(
+            { ...next[idx], unitPrice: item.unitPrice, priceTiers: item.priceTiers, basePrice: item.basePrice ?? item.unitPrice },
+            next[idx].quantity + item.quantity,
+          )
           return next
         }
-        return [...prev, { ...item }]
+        return [...prev, withResolvedPrice({ ...item }, item.quantity)]
       })
     },
     [items.length, supplierId, supplierLabel],
@@ -199,7 +206,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const confirmSwitchSupplier = useCallback(() => {
     if (!switchDialog) return
     const { item, otherSupplierLabel } = switchDialog
-    setItems([{ ...item }])
+    setItems([withResolvedPrice({ ...item }, item.quantity)])
     setSupplierId(item.supplierId)
     setSupplierLabel(otherSupplierLabel)
     setSupplierCurrency(item.supplierCurrency ?? 'USD')
@@ -229,7 +236,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return
       }
       setItems((prev) =>
-        prev.map((i) => (i.variationId === variationId ? { ...i, quantity } : i)),
+        prev.map((i) => (i.variationId === variationId ? withResolvedPrice(i, quantity) : i)),
       )
     },
     [removeItem],

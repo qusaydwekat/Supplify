@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import { Minus, Package, Plus, RotateCcw, ShoppingCart } from 'lucide-react'
 import { getReorderCartPayloadForProduct } from '@/lib/actions/reorder'
 import { useCartContext } from '@/components/cart/cart-provider'
+import type { ProductAttributeRow } from '@/lib/data/products/attributes'
+import { resolveUnitPrice, type PriceTier } from '@/lib/pricing/resolve-unit-price'
 import { formatCurrency, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -16,6 +18,8 @@ export type StorefrontVariation = {
   price: number
   stock_quantity: number
   min_order_quantity: number
+  priceTiers?: PriceTier[]
+  optionIds?: string[]
 }
 
 type Props = {
@@ -31,8 +35,20 @@ type Props = {
     category?: string | null
   }
   variations: StorefrontVariation[]
+  attributes?: ProductAttributeRow[]
   hasOrderedBefore?: boolean
   showReorder?: boolean
+}
+
+function findVariationByOptions(
+  variations: StorefrontVariation[],
+  selectedOptionIds: string[],
+): StorefrontVariation | undefined {
+  if (!selectedOptionIds.length) return variations[0]
+  return variations.find((v) => {
+    const ids = v.optionIds ?? []
+    return selectedOptionIds.every((id) => ids.includes(id))
+  })
 }
 
 export function ProductCard({
@@ -41,6 +57,7 @@ export function ProductCard({
   supplierCurrency,
   product,
   variations,
+  attributes = [],
   hasOrderedBefore,
   showReorder = false,
 }: Props) {
@@ -50,21 +67,56 @@ export function ProductCard({
   const { addItem, replaceCartWithItems, setOpen } = useCartContext()
   const sorted = useMemo(() => [...variations].sort((a, b) => a.name.localeCompare(b.name)), [variations])
 
+  const useMatrix = attributes.length > 0 && attributes.every((a) => a.options.length > 0)
+
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const attr of attributes) {
+      if (attr.options[0]) init[attr.id] = attr.options[0].id
+    }
+    return init
+  })
+
+  const matrixOptionIds = useMemo(
+    () => attributes.map((a) => selectedOptions[a.id]).filter(Boolean),
+    [attributes, selectedOptions],
+  )
+
+  const matrixVariation = useMatrix
+    ? findVariationByOptions(sorted, matrixOptionIds)
+    : undefined
+
   const firstId = sorted[0]?.id ?? ''
   const [variationId, setVariationId] = useState(firstId)
   const [qty, setQty] = useState(1)
   const [reorderLoading, setReorderLoading] = useState(false)
 
-  const selected = sorted.find((v) => v.id === variationId) ?? sorted[0]
+  useEffect(() => {
+    if (matrixVariation) setVariationId(matrixVariation.id)
+  }, [matrixVariation?.id])
+
+  const selected = useMatrix
+    ? matrixVariation
+    : sorted.find((v) => v.id === variationId) ?? sorted[0]
+
+  const unitPrice = selected
+    ? resolveUnitPrice(Number(selected.price), selected.priceTiers ?? [], qty)
+    : 0
+
   const outOfStock = selected ? Number(selected.stock_quantity) <= 0 : true
   const lowStock =
     selected &&
     Number(selected.stock_quantity) > 0 &&
     Number(selected.stock_quantity) < Number(selected.min_order_quantity) * 3
 
-  const displayPrice = selected
-    ? formatCurrency(Number(selected.price), supplierCurrency)
-    : formatCurrency(0, supplierCurrency)
+  const displayPrice = formatCurrency(unitPrice, supplierCurrency)
+  const tierHint =
+    selected && (selected.priceTiers?.length ?? 0) > 0
+      ? [...(selected.priceTiers ?? [])]
+          .sort((a, b) => a.minQuantity - b.minQuantity)
+          .map((tier) => `${tier.minQuantity}+: ${formatCurrency(tier.unitPrice, supplierCurrency)}`)
+          .join(' · ')
+      : null
 
   const onAdd = () => {
     if (!selected || outOfStock) return
@@ -79,9 +131,11 @@ export function ProductCard({
         supplierId,
         supplierCurrency,
         productName: product.name,
-        variationName: product.has_variations ? selected.name : null,
+        variationName: product.has_variations || useMatrix ? selected.name : null,
         quantity: qty,
-        unitPrice: Number(selected.price),
+        unitPrice,
+        basePrice: Number(selected.price),
+        priceTiers: selected.priceTiers ?? [],
       },
       supplierLabel,
       supplierCurrency,
@@ -131,7 +185,6 @@ export function ProductCard({
         'hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
       )}
     >
-      {/* Image */}
       <div className="relative aspect-[5/4] w-full overflow-hidden bg-gradient-to-br from-primary/8 via-muted to-muted/50 sm:aspect-[4/3]">
         {product.image_url ? (
           <>
@@ -194,7 +247,38 @@ export function ProductCard({
           </p>
         ) : null}
 
-        {product.has_variations && sorted.length > 1 ? (
+        {useMatrix ? (
+          <div className="mt-4 space-y-3">
+            {attributes.map((attr) => (
+              <div key={attr.id} className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{attr.name}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {attr.options.map((opt) => {
+                    const active = selectedOptions[attr.id] === opt.id
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setSelectedOptions((prev) => ({ ...prev, [attr.id]: opt.id }))}
+                        className={cn(
+                          'rounded-lg border px-2.5 py-1.5 text-xs font-medium transition',
+                          active
+                            ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                            : 'border-border bg-muted/40 text-foreground hover:border-primary/30',
+                        )}
+                      >
+                        {opt.value}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            {!matrixVariation ? (
+              <p className="text-xs text-amber-700">{t('comboUnavailable')}</p>
+            ) : null}
+          </div>
+        ) : product.has_variations && sorted.length > 1 ? (
           <div className="mt-4 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t('variation')}
@@ -204,6 +288,7 @@ export function ProductCard({
                 {sorted.map((v) => {
                   const disabled = Number(v.stock_quantity) <= 0
                   const active = v.id === variationId
+                  const listPrice = resolveUnitPrice(Number(v.price), v.priceTiers ?? [], 1)
                   return (
                     <button
                       key={v.id}
@@ -220,7 +305,7 @@ export function ProductCard({
                     >
                       <span className="block truncate">{v.name}</span>
                       <span className="mt-0.5 block tabular-nums text-[10px] opacity-80">
-                        {formatCurrency(Number(v.price), supplierCurrency)}
+                        {formatCurrency(listPrice, supplierCurrency)}
                         {disabled ? ` · ${t('outOfStock')}` : ''}
                       </span>
                     </button>
@@ -245,6 +330,8 @@ export function ProductCard({
         ) : (
           <p className="mt-4 text-xl font-bold tabular-nums text-foreground">{displayPrice}</p>
         )}
+
+        {tierHint ? <p className="mt-2 text-xs text-muted-foreground">{t('volumePricing')}: {tierHint}</p> : null}
 
         {!outOfStock ? (
           <div className="mt-4 space-y-1.5">
@@ -286,11 +373,14 @@ export function ProductCard({
             <p className="text-xs text-muted-foreground">
               {t('min')} {selected.min_order_quantity}
             </p>
+            <p className="text-sm font-semibold tabular-nums text-foreground">
+              {t('linePreview')}: {formatCurrency(unitPrice * qty, supplierCurrency)}
+            </p>
           </div>
         ) : null}
 
         <div className="mt-auto space-y-2 pt-4">
-          {!outOfStock ? (
+          {!outOfStock && (!useMatrix || matrixVariation) ? (
             <Button
               type="button"
               className="h-11 w-full gap-2 rounded-xl text-sm font-semibold shadow-sm"

@@ -9,6 +9,7 @@ import {
   type OrderStatus,
 } from "@/lib/validations/order";
 import { VARIATION_PUBLIC_COLUMNS } from "@/lib/utils";
+import { listPriceTiersForVariations, resolveUnitPrice } from "@/lib/data/products/price-tiers";
 import { evaluateCreditForCommitment } from "@/lib/data/credit-exposure";
 import { writeAuditLog } from "@/lib/data/audit-log";
 
@@ -81,6 +82,8 @@ export async function createOrder(
   const varMap = new Map(variations.map((v) => [v.id, v]));
   const productIds = [...new Set(variations.map((v) => v.product_id))];
 
+  const tierMap = await listPriceTiersForVariations(variationIds);
+
   const { data: products, error: pFetchErr } = await supabase
     .from("products")
     .select("id, name, supplier_id, is_active")
@@ -147,7 +150,9 @@ export async function createOrder(
     const qty = item.quantity;
     const minOrder = Number(v.min_order_quantity);
     const stock = Number(v.stock_quantity);
-    const unitPrice = Number(v.price);
+    const basePrice = Number(v.price);
+    const tiers = tierMap.get(v.id) ?? [];
+    const unitPrice = resolveUnitPrice(basePrice, tiers, qty);
 
     if (qty < minOrder) {
       return {

@@ -12,6 +12,39 @@ import {
   adjustStockSchema,
 } from '@/lib/validations/product'
 
+function defaultReorderPoint(minOrderQty: number, explicit?: number | null) {
+  if (explicit != null) return explicit
+  return Math.max(minOrderQty * 2, 1)
+}
+
+function variationInsertRow(productId: string, v: {
+  name: string
+  sku?: string | null
+  cost_price?: number
+  price: number
+  min_order_quantity: number
+  reorder_point?: number | null
+  reorder_qty?: number | null
+  lead_time_days?: number | null
+  is_active: boolean
+}) {
+  const moq = v.min_order_quantity
+  return {
+    product_id: productId,
+    name: v.name,
+    sku: v.sku || null,
+    cost_price: v.cost_price ?? 0,
+    price: v.price,
+    stock_quantity: 0,
+    min_order_quantity: moq,
+    reorder_point: defaultReorderPoint(moq, v.reorder_point),
+    reorder_qty: v.reorder_qty ?? null,
+    lead_time_days: v.lead_time_days ?? null,
+    is_active: v.is_active,
+    updated_at: new Date().toISOString(),
+  }
+}
+
 async function getSupplierIdForUser() {
   const supabase = supabaseServer()
   const {
@@ -86,9 +119,11 @@ export async function createProduct(input: unknown) {
       name: p.name,
       description: p.description || null,
       category: p.category || null,
+      marketplace_category: p.marketplace_category || null,
       image_url: p.image_url || null,
       has_variations: p.has_variations,
       is_active: p.is_active,
+      catalog_status: p.is_active ? 'published' : 'draft',
       updated_at: new Date().toISOString(),
     })
     .select()
@@ -99,17 +134,14 @@ export async function createProduct(input: unknown) {
   if (!p.has_variations) {
     const { data: vRow, error: vError } = await supabase
       .from('product_variations')
-      .insert({
-        product_id: product.id,
+      .insert(variationInsertRow(product.id, {
         name: 'Default',
         sku: null,
         cost_price: p.cost_price ?? 0,
         price: p.price ?? 0,
-        stock_quantity: 0,
         min_order_quantity: p.min_order_quantity ?? 1,
         is_active: true,
-        updated_at: new Date().toISOString(),
-      })
+      }))
       .select('id')
       .single()
 
@@ -128,17 +160,7 @@ export async function createProduct(input: unknown) {
       if (adj.error) return { product: null, error: adj.error }
     }
   } else if (p.variations?.length) {
-    const rows = p.variations.map((v) => ({
-      product_id: product.id,
-      name: v.name,
-      sku: v.sku || null,
-      cost_price: v.cost_price ?? 0,
-      price: v.price,
-      stock_quantity: 0,
-      min_order_quantity: v.min_order_quantity,
-      is_active: v.is_active,
-      updated_at: new Date().toISOString(),
-    }))
+    const rows = p.variations.map((v) => variationInsertRow(product.id, v))
     const { data: insertedVars, error: vError } = await supabase.from('product_variations').insert(rows).select('id')
 
     if (vError || !insertedVars?.length) return { product: null, error: vError?.message ?? 'Insert failed' }
@@ -184,9 +206,11 @@ export async function updateProduct(id: string, input: unknown) {
       name: p.name,
       description: p.description || null,
       category: p.category || null,
+      marketplace_category: p.marketplace_category || null,
       image_url: p.image_url || null,
       has_variations: p.has_variations,
       is_active: p.is_active,
+      catalog_status: p.is_active ? 'published' : 'draft',
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -230,17 +254,7 @@ export async function createVariation(productId: string, data: unknown) {
   const v = parsed.data
   const { data: variation, error } = await supabase
     .from('product_variations')
-    .insert({
-      product_id: productId,
-      name: v.name,
-      sku: v.sku || null,
-      cost_price: v.cost_price ?? 0,
-      price: v.price,
-      stock_quantity: 0,
-      min_order_quantity: v.min_order_quantity,
-      is_active: v.is_active,
-      updated_at: new Date().toISOString(),
-    })
+    .insert(variationInsertRow(productId, v))
     .select('id')
     .single()
 
@@ -305,6 +319,9 @@ export async function updateVariation(id: string, data: unknown) {
       cost_price: v.cost_price ?? 0,
       price: v.price,
       min_order_quantity: v.min_order_quantity,
+      reorder_point: defaultReorderPoint(v.min_order_quantity, v.reorder_point),
+      reorder_qty: v.reorder_qty ?? null,
+      lead_time_days: v.lead_time_days ?? null,
       is_active: v.is_active,
       updated_at: new Date().toISOString(),
     })
@@ -355,8 +372,13 @@ export async function deleteVariation(variationId: string) {
   return { error: null }
 }
 
-export async function adjustStock(variationId: string, quantity: number, reason?: string) {
-  const parsed = adjustStockSchema.safeParse({ variationId, delta: quantity, reason })
+export async function adjustStock(
+  variationId: string,
+  quantity: number,
+  reason: 'count_correction' | 'damaged' | 'received_shipment' | 'returned_to_supplier' | 'other',
+  note?: string,
+) {
+  const parsed = adjustStockSchema.safeParse({ variationId, delta: quantity, reason, note })
   if (!parsed.success) return { error: parsed.error.message }
 
   const ctx = await getSupplierIdForUser()
@@ -378,6 +400,10 @@ export async function adjustStock(variationId: string, quantity: number, reason?
   const next = prev + parsed.data.delta
   if (next < 0) return { error: 'Stock cannot be negative' }
 
+  const noteParts: string[] = [parsed.data.reason]
+  if (parsed.data.note?.trim()) noteParts.push(parsed.data.note.trim())
+  const movementNote = noteParts.join(' — ')
+
   const adj = await applyStockDeltaViaMovement(supabase, {
     supplierId,
     variationId: parsed.data.variationId,
@@ -385,7 +411,7 @@ export async function adjustStock(variationId: string, quantity: number, reason?
     targetQty: next,
     referenceType: 'manual_adjustment',
     referenceId: randomUUID(),
-    notes: parsed.data.reason?.trim() || null,
+    notes: movementNote,
   })
 
   if (adj.error) return { error: adj.error }

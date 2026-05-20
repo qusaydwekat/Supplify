@@ -6,6 +6,7 @@ type Props = {
   active: InventoryInsightFilter
   reorderCount: number
   lowStockCount: number
+  basePath?: string
   labels: {
     all: string
     reorder: string
@@ -15,12 +16,18 @@ type Props = {
   }
 }
 
-function buildHref(filter: InventoryInsightFilter) {
-  if (filter === 'all') return '/supplier/inventory-insights'
-  return `/supplier/inventory-insights?filter=${filter}`
+function buildHref(filter: InventoryInsightFilter, basePath: string) {
+  if (filter === 'all') return basePath
+  return `${basePath}?filter=${filter}`
 }
 
-export function InventoryInsightsFilterChips({ active, reorderCount, lowStockCount, labels }: Props) {
+export function InventoryInsightsFilterChips({
+  active,
+  reorderCount,
+  lowStockCount,
+  basePath = '/supplier/inventory-insights',
+  labels,
+}: Props) {
   const chips: { key: InventoryInsightFilter; label: string; count?: number }[] = [
     { key: 'all', label: labels.all },
     { key: 'reorder', label: labels.reorder, count: reorderCount },
@@ -36,7 +43,7 @@ export function InventoryInsightsFilterChips({ active, reorderCount, lowStockCou
         return (
           <Link
             key={chip.key}
-            href={buildHref(chip.key)}
+            href={buildHref(chip.key, basePath)}
             role="tab"
             aria-selected={isActive}
             className={cn(

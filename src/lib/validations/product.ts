@@ -1,4 +1,11 @@
 import { z } from 'zod'
+import { isMarketplaceCategorySlug } from '@/lib/supplier-marketplace-categories'
+
+const marketplaceCategorySchema = z
+  .string()
+  .optional()
+  .or(z.literal(''))
+  .refine((v) => !v || isMarketplaceCategorySlug(v), { message: 'Invalid category' })
 
 const variationShape = {
   name: z.string().min(1),
@@ -7,6 +14,9 @@ const variationShape = {
   price: z.coerce.number().min(0),
   stock_quantity: z.coerce.number().int().min(0),
   min_order_quantity: z.coerce.number().int().min(1),
+  reorder_point: z.coerce.number().int().min(0).optional().nullable(),
+  reorder_qty: z.coerce.number().int().min(1).optional().nullable(),
+  lead_time_days: z.coerce.number().int().min(0).optional().nullable(),
   is_active: z.boolean(),
 } as const
 
@@ -39,6 +49,7 @@ export const productCreateSchema = z
     name: z.string().min(1),
     description: z.string().optional().or(z.literal('')),
     category: z.string().optional().or(z.literal('')),
+    marketplace_category: marketplaceCategorySchema,
     image_url: z.union([z.string().url(), z.literal('')]).optional(),
     has_variations: z.boolean(),
     is_active: z.boolean(),
@@ -77,6 +88,7 @@ export const productUpdateSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional().or(z.literal('')),
   category: z.string().optional().or(z.literal('')),
+  marketplace_category: marketplaceCategorySchema,
   image_url: z.union([z.string().url(), z.literal('')]).optional(),
   has_variations: z.boolean(),
   is_active: z.boolean(),
@@ -96,5 +108,6 @@ export const variationUpdateSchema = withPriceAtLeastCost(
 export const adjustStockSchema = z.object({
   variationId: z.string().uuid(),
   delta: z.coerce.number().int(),
-  reason: z.string().optional(),
+  reason: z.enum(['count_correction', 'damaged', 'received_shipment', 'returned_to_supplier', 'other']),
+  note: z.string().max(500).optional().or(z.literal('')),
 })

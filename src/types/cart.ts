@@ -8,4 +8,7 @@ export type CartItem = {
   variationName: string | null
   quantity: number
   unitPrice: number
+  /** Volume tiers for client-side price refresh when quantity changes */
+  priceTiers?: { minQuantity: number; unitPrice: number }[]
+  basePrice?: number
 }

@@ -3,7 +3,13 @@ import type { AppLocale } from '@/i18n/routing'
 import type { InvoicePdfBank, InvoicePdfInstallment, InvoicePdfParty } from '@/lib/data/invoice-pdf'
 import type { InvoiceStatus } from '@/lib/invoices-types'
 import { formatLabel, pdfStatusLabel, type InvoicePdfLabels } from '@/lib/pdf/invoice-pdf-i18n'
-import { formatLineItemLabel, formatPdfDate, formatPdfMoney } from '@/lib/pdf/pdf-format'
+import {
+  formatLineItemLabel,
+  formatPdfCurrencyCode,
+  formatPdfDate,
+  formatPdfMoney,
+  pdfLtrTextStyle,
+} from '@/lib/pdf/pdf-format'
 import { pdfFontFamily } from '@/lib/pdf/register-fonts'
 
 export type InvoicePdfLine = {
@@ -312,12 +318,11 @@ const styles = StyleSheet.create({
     right: PAGE_PAD_H,
     borderTopWidth: 1,
     borderTopColor: c.border,
-    paddingTop: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingTop: 10,
+    alignItems: 'center',
   },
-  footerText: { fontSize: 7, color: c.muted, lineHeight: 1.4, maxWidth: '70%' },
-  footerBrand: { fontSize: 7, color: c.primary, fontWeight: 700 },
+  footerThanks: { fontSize: 8, color: c.primary, fontWeight: 700, marginBottom: 4, textAlign: 'center' },
+  footerText: { fontSize: 7, color: c.muted, lineHeight: 1.5, textAlign: 'center', maxWidth: '92%' },
 })
 
 function statusPillStyle(status: InvoiceStatus) {
@@ -419,7 +424,7 @@ function MetaCell({
       ]}
     >
       <Text style={[styles.metaLabel, rtl ? { textAlign: 'right' } : {}]}>{label}</Text>
-      <Text style={[styles.metaValue, rtl ? { textAlign: 'right' } : {}]}>{value}</Text>
+      <Text style={[styles.metaValue, rtl ? { textAlign: 'right' } : {}, pdfLtrTextStyle]}>{value}</Text>
     </View>
   )
 }
@@ -475,11 +480,11 @@ function LineItemsTable({
                   <Text style={[styles.itemSecondary, rtl ? { textAlign: 'right' } : {}]}>{secondary}</Text>
                 ) : null}
               </View>
-              <Text style={[styles.colQty, rtl ? styles.colQtyRtl : {}]}>{String(l.quantity)}</Text>
-              <Text style={[styles.colUnit, rtl ? styles.colUnitRtl : {}]}>
+              <Text style={[styles.colQty, rtl ? styles.colQtyRtl : {}, pdfLtrTextStyle]}>{String(l.quantity)}</Text>
+              <Text style={[styles.colUnit, rtl ? styles.colUnitRtl : {}, pdfLtrTextStyle]}>
                 {formatPdfMoney(l.unit_price, currencyCode, locale)}
               </Text>
-              <Text style={[styles.colAmount, rtl ? styles.colAmountRtl : {}]}>
+              <Text style={[styles.colAmount, rtl ? styles.colAmountRtl : {}, pdfLtrTextStyle]}>
                 {formatPdfMoney(l.total_price, currencyCode, locale)}
               </Text>
             </View>
@@ -520,20 +525,27 @@ function AmountSummary({
         <View style={styles.summaryBody}>
           <View style={[styles.summaryRow, { flexDirection: rowDir }]}>
             <Text style={[styles.summaryLabel, rtl ? styles.summaryLabelRtl : {}]}>{labels.invoiceTotal}</Text>
-            <Text style={[styles.summaryValue, rtl ? styles.summaryValueRtl : {}]}>
+            <Text style={[styles.summaryValue, rtl ? styles.summaryValueRtl : {}, pdfLtrTextStyle]}>
               {formatPdfMoney(total, currencyCode, locale)}
             </Text>
           </View>
           <View style={[styles.summaryRow, { flexDirection: rowDir }]}>
             <Text style={[styles.summaryLabel, rtl ? styles.summaryLabelRtl : {}]}>{labels.amountPaid}</Text>
-            <Text style={[styles.summaryValue, rtl ? styles.summaryValueRtl : {}]}>
+            <Text style={[styles.summaryValue, rtl ? styles.summaryValueRtl : {}, pdfLtrTextStyle]}>
               {formatPdfMoney(paidTotal, currencyCode, locale)}
             </Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={[styles.balanceRow, { flexDirection: rowDir }]}>
             <Text style={[styles.balanceLabel, rtl ? { textAlign: 'right' } : {}]}>{labels.balanceDue}</Text>
-            <Text style={[styles.balanceValue, balanceStyle, rtl ? { textAlign: 'left' } : { textAlign: 'right' }]}>
+            <Text
+              style={[
+                styles.balanceValue,
+                balanceStyle,
+                rtl ? { textAlign: 'left' } : { textAlign: 'right' },
+                pdfLtrTextStyle,
+              ]}
+            >
               {formatPdfMoney(remaining, currencyCode, locale)}
             </Text>
           </View>
@@ -555,7 +567,7 @@ export function InvoicePdfDocument(props: InvoicePdfProps) {
     { label: labels.issued, value: formatPdfDate(props.issuedAt, locale) },
     { label: labels.dueDate, value: formatPdfDate(props.dueDate, locale) },
     { label: labels.orderRef, value: props.orderRef },
-    { label: labels.currency, value: props.currencyCode.toUpperCase() },
+    { label: labels.currency, value: formatPdfCurrencyCode(props.currencyCode) },
     ...(props.paidAt ? [{ label: labels.paidOn, value: formatPdfDate(props.paidAt, locale) }] : []),
   ]
 
@@ -583,7 +595,9 @@ export function InvoicePdfDocument(props: InvoicePdfProps) {
           </View>
           <View style={[styles.headerAside, rtl ? styles.headerAsideRtl : {}]}>
             <Text style={[styles.invLabel, { textAlign: rtl ? 'left' : 'right' }]}>{labels.invoiceNo}</Text>
-            <Text style={[styles.invNumber, { textAlign: rtl ? 'left' : 'right' }]}>{props.invoiceNumber}</Text>
+            <Text style={[styles.invNumber, { textAlign: rtl ? 'left' : 'right' }, pdfLtrTextStyle]}>
+              {props.invoiceNumber}
+            </Text>
             <View style={[styles.statusPill, { backgroundColor: pill.backgroundColor }]}>
               <Text style={[styles.statusText, { color: pill.color }]}>{statusLabel}</Text>
             </View>
@@ -643,12 +657,21 @@ export function InvoicePdfDocument(props: InvoicePdfProps) {
                     style={[styles.instRow, { flexDirection: rowDir }, isLast ? styles.instRowLast : {}]}
                   >
                     <Text style={[styles.instLabel, rtl ? styles.instLabelRtl : {}]}>
-                      {formatLabel(labels.installmentDue, {
-                        seq: inst.seq,
-                        date: formatPdfDate(inst.dueDate, locale),
-                      })}
+                      {rtl ? (
+                        <>
+                          {'قسط '}
+                          <Text style={pdfLtrTextStyle}>{inst.seq}</Text>
+                          {' · استحقاق '}
+                          <Text style={pdfLtrTextStyle}>{formatPdfDate(inst.dueDate, locale)}</Text>
+                        </>
+                      ) : (
+                        formatLabel(labels.installmentDue, {
+                          seq: inst.seq,
+                          date: formatPdfDate(inst.dueDate, locale),
+                        })
+                      )}
                     </Text>
-                    <Text style={[styles.instAmount, rtl ? styles.instAmountRtl : {}]}>
+                    <Text style={[styles.instAmount, rtl ? styles.instAmountRtl : {}, pdfLtrTextStyle]}>
                       {formatPdfMoney(inst.remaining > 0 ? inst.remaining : 0, props.currencyCode, locale)}
                     </Text>
                   </View>
@@ -664,7 +687,9 @@ export function InvoicePdfDocument(props: InvoicePdfProps) {
             <View style={[styles.bankGrid, { flexDirection: rowDir }]}>
               {bankLines.map((line, i) => (
                 <View key={i} style={[styles.bankCol, rtl ? styles.bankColRtl : {}, { width: '100%' }]}>
-                  <Text style={line.mono ? styles.bankMono : styles.bankLine}>{line.text}</Text>
+                  <Text style={[line.mono ? styles.bankMono : styles.bankLine, line.mono ? pdfLtrTextStyle : {}]}>
+                    {line.text}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -678,13 +703,21 @@ export function InvoicePdfDocument(props: InvoicePdfProps) {
           </View>
         ) : null}
 
-        <View style={[styles.footer, { flexDirection: rowDir }]} fixed>
-          <Text style={[styles.footerText, rtl ? { textAlign: 'right' } : {}]}>
-            {formatLabel(labels.footerRef, { invoiceNumber: props.invoiceNumber })}
-          </Text>
-          <Text style={[styles.footerBrand, rtl ? { textAlign: 'left' } : { textAlign: 'right' }]}>
-            {labels.footerThanks}
-          </Text>
+        <View style={styles.footer} fixed>
+          <Text style={[styles.footerThanks, rtl ? { textAlign: 'center' } : {}]}>{labels.footerThanks}</Text>
+          {rtl ? (
+            <Text style={[styles.footerText, { textAlign: 'center' }]}>
+              {'تم إصدار هذه الفاتورة عبر منصة '}
+              <Text style={pdfLtrTextStyle}>Supplify</Text>
+              {' · يرجى ذكر رقم الفاتورة '}
+              <Text style={pdfLtrTextStyle}>{props.invoiceNumber}</Text>
+              {' عند إجراء التحويل البنكي'}
+            </Text>
+          ) : (
+            <Text style={styles.footerText}>
+              {formatLabel(labels.footerRef, { brand: 'Supplify', invoiceNumber: props.invoiceNumber })}
+            </Text>
+          )}
         </View>
       </Page>
     </Document>

@@ -1,4 +1,5 @@
 import { getRequestConfig } from 'next-intl/server'
+import { APP_TIME_ZONE } from '@/i18n/config'
 import { resolveLocale } from '@/i18n/locale'
 import { deepMergeMessages } from '@/i18n/merge-messages'
 
@@ -12,6 +13,6 @@ export default getRequestConfig(async () => {
   return {
     locale,
     messages,
-    timeZone: 'Asia/Hebron',
+    timeZone: APP_TIME_ZONE,
   }
 })

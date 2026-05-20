@@ -6,6 +6,7 @@ import {
   ProductCard,
   type StorefrontVariation,
 } from "@/components/products/product-card";
+import type { ProductAttributeRow } from "@/lib/data/products/attributes";
 import { cn } from "@/lib/utils";
 
 type ProductRow = {
@@ -20,6 +21,7 @@ type ProductRow = {
 type Pack = {
   product: ProductRow;
   variations: StorefrontVariation[];
+  attributes: ProductAttributeRow[];
 };
 
 type Props = {
@@ -169,6 +171,7 @@ export function StorefrontCatalog({
               category: pack.product.category,
             }}
             variations={pack.variations}
+            attributes={pack.attributes}
             hasOrderedBefore={orderedSet.has(pack.product.id)}
             showReorder={reorderableSet.has(pack.product.id)}
           />
@@ -203,6 +206,7 @@ export function StorefrontCatalog({
                   category: pack.product.category,
                 }}
                 variations={pack.variations}
+                attributes={pack.attributes}
                 hasOrderedBefore={false}
               />
             ))}

@@ -17,6 +17,8 @@ import { createProduct, updateProduct, deleteProduct, uploadProductImage, update
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { VariationsTable, type VariationRow } from '@/components/products/variations-table'
+import { MARKETPLACE_CATEGORY_SLUGS, type MarketplaceCategorySlug } from '@/lib/supplier-marketplace-categories'
+import { isVariationLowStock } from '@/lib/types/products'
 import { cn } from '@/lib/utils'
 
 type ProductRow = {
@@ -24,17 +26,21 @@ type ProductRow = {
   name: string
   description: string | null
   category: string | null
+  marketplace_category?: MarketplaceCategorySlug | null
   image_url: string | null
   has_variations: boolean
   is_active: boolean
 }
 
+type HubView = 'overview' | 'skus' | 'full'
+
 type Props =
   | { mode: 'create' }
-  | { mode: 'edit'; product: ProductRow; variations: VariationRow[] }
+  | { mode: 'edit'; product: ProductRow; variations: VariationRow[]; hubView?: HubView; tiersByVariation?: Record<string, import('@/lib/pricing/resolve-unit-price').PriceTier[]> }
 
 function ProductFormCreate() {
   const pf = useTranslations('ProductForm')
+  const tCat = useTranslations('MarketplaceCategories')
   const router = useRouter()
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -45,6 +51,7 @@ function ProductFormCreate() {
       name: '',
       description: '',
       category: '',
+      marketplace_category: '',
       image_url: '',
       has_variations: false,
       is_active: true,
@@ -102,7 +109,17 @@ function ProductFormCreate() {
         </div>
         <div>
           <label className="text-sm font-medium">{pf('category')}</label>
-          <Input className="mt-1" {...form.register('category')} />
+          <select
+            className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            {...form.register('marketplace_category')}
+          >
+            <option value="">{pf('categoryNone')}</option>
+            {MARKETPLACE_CATEGORY_SLUGS.map((slug) => (
+              <option key={slug} value={slug}>
+                {tCat(slug)}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-6 pt-6">
           <label className="flex items-center gap-2 text-sm">
@@ -252,8 +269,19 @@ function ProductFormCreate() {
   )
 }
 
-function ProductFormEdit({ product, variations }: { product: ProductRow; variations: VariationRow[] }) {
+function ProductFormEdit({
+  product,
+  variations,
+  hubView = 'full',
+  tiersByVariation = {},
+}: {
+  product: ProductRow
+  variations: VariationRow[]
+  hubView?: HubView
+  tiersByVariation?: Record<string, import('@/lib/pricing/resolve-unit-price').PriceTier[]>
+}) {
   const pf = useTranslations('ProductForm')
+  const tCat = useTranslations('MarketplaceCategories')
   const router = useRouter()
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -264,6 +292,7 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
       name: product.name,
       description: product.description ?? '',
       category: product.category ?? '',
+      marketplace_category: product.marketplace_category ?? '',
       image_url: product.image_url ?? '',
       has_variations: product.has_variations,
       is_active: product.is_active,
@@ -281,6 +310,9 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
     price: singleVariation?.price ?? 0,
     stock_quantity: singleVariation?.stock_quantity ?? 0,
     min_order_quantity: singleVariation?.min_order_quantity ?? 1,
+    reorder_point: (singleVariation?.reorder_point ?? 2) as number | null,
+    reorder_qty: singleVariation?.reorder_qty ?? null,
+    lead_time_days: singleVariation?.lead_time_days ?? null,
     is_active: singleVariation?.is_active ?? true,
   }))
 
@@ -312,6 +344,9 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
       price: Number(singleV.price),
       stock_quantity: Number(singleV.stock_quantity),
       min_order_quantity: Number(singleV.min_order_quantity),
+      reorder_point: singleV.reorder_point != null ? Number(singleV.reorder_point) : null,
+      reorder_qty: singleV.reorder_qty != null ? Number(singleV.reorder_qty) : null,
+      lead_time_days: singleV.lead_time_days != null ? Number(singleV.lead_time_days) : null,
       is_active: singleV.is_active,
     })
     if (res.error) toast.error(res.error)
@@ -333,8 +368,12 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
     router.refresh()
   }
 
+  const showOverview = hubView === 'full' || hubView === 'overview'
+  const showSkus = hubView === 'full' || hubView === 'skus'
+
   return (
     <div className="space-y-8">
+      {showOverview ? (
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -351,7 +390,17 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
           </div>
           <div>
             <label className="text-sm font-medium">{pf('category')}</label>
-            <Input className="mt-1" {...form.register('category')} />
+            <select
+              className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              {...form.register('marketplace_category')}
+            >
+              <option value="">{pf('categoryNone')}</option>
+              {MARKETPLACE_CATEGORY_SLUGS.map((slug) => (
+                <option key={slug} value={slug}>
+                  {tCat(slug)}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex items-center gap-6 pt-6">
             <label className="flex items-center gap-2 text-sm">
@@ -388,24 +437,28 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
               {pf('backToList')}
             </Button>
           </Link>
-          <Link href={`/supplier/products/${product.id}/variations`}>
-            <Button type="button" variant="secondary">
-              {pf('manageVariations')}
-            </Button>
-          </Link>
+          {hubView === 'full' ? (
+            <Link href={`/supplier/products/${product.id}/variations`}>
+              <Button type="button" variant="secondary">
+                {pf('manageVariations')}
+              </Button>
+            </Link>
+          ) : null}
           <Button type="button" variant="secondary" className="text-red-600" onClick={onDeleteProduct}>
             {pf('deleteProduct')}
           </Button>
         </div>
       </form>
+      ) : null}
 
-      {hasVariations ? (
+      {showSkus && hasVariations ? (
         <VariationsTable
           key={variations.map((v) => `${v.id}-${v.stock_quantity}-${v.price}-${v.cost_price}`).join('|')}
           productId={product.id}
           initialRows={variations}
+          initialTiersByVariation={tiersByVariation}
         />
-      ) : singleVariation ? (
+      ) : showSkus && singleVariation ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6">
           <h3 className="text-sm font-semibold text-slate-900">{pf('defaultPriceStock')}</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -462,6 +515,36 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
                 onChange={(e) => setSingleV((s) => ({ ...s, min_order_quantity: Number(e.target.value) }))}
               />
             </div>
+            <div>
+              <label className="text-sm font-medium">{pf('reorderPoint')}</label>
+              <Input
+                type="number"
+                min={0}
+                className="mt-1"
+                value={singleV.reorder_point ?? ''}
+                onChange={(e) =>
+                  setSingleV((s) => ({
+                    ...s,
+                    reorder_point: e.target.value === '' ? null : Number(e.target.value),
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{pf('leadTimeDays')}</label>
+              <Input
+                type="number"
+                min={0}
+                className="mt-1"
+                value={singleV.lead_time_days ?? ''}
+                onChange={(e) =>
+                  setSingleV((s) => ({
+                    ...s,
+                    lead_time_days: e.target.value === '' ? null : Number(e.target.value),
+                  }))
+                }
+              />
+            </div>
             <div className="flex items-end">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -478,7 +561,9 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
               {pf('savePricingStock')}
             </Button>
           </div>
-          {singleV.stock_quantity < 10 && <p className={cn('mt-3 text-sm text-amber-700')}>{pf('lowStockHint')}</p>}
+          {isVariationLowStock(singleV.stock_quantity, singleV.min_order_quantity, singleV.reorder_point) && (
+            <p className={cn('mt-3 text-sm text-amber-700')}>{pf('lowStockHint')}</p>
+          )}
         </div>
       ) : null}
     </div>
@@ -487,5 +572,12 @@ function ProductFormEdit({ product, variations }: { product: ProductRow; variati
 
 export function ProductForm(props: Props) {
   if (props.mode === 'create') return <ProductFormCreate />
-  return <ProductFormEdit product={props.product} variations={props.variations} />
+  return (
+    <ProductFormEdit
+      product={props.product}
+      variations={props.variations}
+      hubView={props.hubView}
+      tiersByVariation={props.tiersByVariation}
+    />
+  )
 }

@@ -51,13 +51,36 @@ function coerceParams(p: NotificationRow['params']): Record<string, string | num
 }
 
 function normalizeNotificationKey(k: string): string {
-  // `t` is already scoped to the "Notifications" namespace. If the DB stored a fully-qualified
-  // key like "Notifications.invoiceIssued.title", strip the prefix to avoid double namespacing.
-  return k.startsWith('Notifications.') ? k.slice('Notifications.'.length) : k
+  // `t` is already scoped to the "Notifications" namespace.
+  let key = k
+  if (key.startsWith('Notifications.')) key = key.slice('Notifications.'.length)
+  if (key.startsWith('notifications.')) key = key.slice('notifications.'.length)
+
+  const legacy: Record<string, string> = {
+    'low_stock.title': 'lowStock.title',
+    'low_stock.message': 'lowStock.message',
+  }
+  return legacy[key] ?? key
+}
+
+function normalizeNotificationParams(
+  type: string,
+  params: Record<string, string | number> | undefined,
+): Record<string, string | number> | undefined {
+  if (!params || type !== 'low_stock') return params
+
+  const out = { ...params }
+  if (out.product == null && out.productName != null) out.product = String(out.productName)
+  if (out.variation == null && out.variationName != null) out.variation = String(out.variationName)
+  if (out.stock == null && out.quantity != null) out.stock = Number(out.quantity)
+  return out
 }
 
 function resolveHref(role: Role, n: NotificationRow): string | null {
-  if (n.type === 'low_stock') return '/supplier/products'
+  if (n.type === 'low_stock' && n.reference_id && n.reference_type === 'product') {
+    return `/supplier/products/${n.reference_id}?tab=stock`
+  }
+  if (n.type === 'low_stock') return '/supplier/products?lowStock=1'
   if (!n.reference_id) return null
   const id = n.reference_id
   switch (n.reference_type) {
@@ -252,7 +275,7 @@ export function NotificationBell({ role }: Props) {
               <ul className="divide-y divide-border">
                 {rows.map((n) => {
                   const href = resolveHref(role, n)
-                  const params = coerceParams(n.params)
+                  const params = normalizeNotificationParams(n.type, coerceParams(n.params))
                   const titleKey =
                     n.title_key ??
                     (n.type === 'low_stock' && params ? 'lowStock.title' : null)

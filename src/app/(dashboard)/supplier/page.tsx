@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { getSupplierDashboardStats } from '@/lib/data/supplier-stats'
+import { getSupplierCatalogAlertStats } from '@/lib/data/catalog-alerts'
 import { getSupplierCollectionAlerts } from '@/lib/data/collection-alerts'
 import { formatDateTimeShort, normalizeAppLocale } from '@/lib/format-datetime'
 import { MiniRevenueChart } from '@/components/charts/mini-revenue-chart'
@@ -37,7 +38,10 @@ export default async function SupplierDashboardHome() {
   const s = res.stats
   const ccy = s.currencyCode
   const alertsRes = await getSupplierCollectionAlerts()
+  const catalogAlerts = await getSupplierCatalogAlertStats()
   const collection = 'error' in alertsRes ? null : alertsRes
+  const catalog = catalogAlerts.stats
+  const showCatalogAlerts = catalog.lowStockSkus > 0 || catalog.draftProducts > 0
   const showCollection = Boolean(
     collection && (collection.overdueCount > 0 || collection.dueSoonCount > 0),
   )
@@ -74,6 +78,35 @@ export default async function SupplierDashboardHome() {
           </Link>
         </div>
       </div>
+
+      {/* Catalog / inventory alerts */}
+      {showCatalogAlerts && (
+        <div className="flex items-start gap-3 rounded-xl border border-sky-200/80 bg-sky-50/80 p-4 shadow-sm">
+          <Package className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sky-950">{t('catalogAlertsTitle')}</p>
+            <ul className="mt-1.5 space-y-0.5 text-sm text-sky-900">
+              {catalog.lowStockSkus > 0 && (
+                <li>{t('catalogAlertLowStock', { count: catalog.lowStockSkus })}</li>
+              )}
+              {catalog.draftProducts > 0 && (
+                <li>{t('catalogAlertDrafts', { count: catalog.draftProducts })}</li>
+              )}
+            </ul>
+            <div className="mt-2 flex flex-wrap gap-3 text-sm font-medium">
+              <Link href="/supplier/products?lowStock=1" className="text-sky-900 underline-offset-4 hover:underline">
+                {t('catalogAlertViewLowStock')}
+              </Link>
+              <Link href="/supplier/inventory/receive" className="text-sky-900 underline-offset-4 hover:underline">
+                {t('catalogAlertReceive')}
+              </Link>
+              <Link href="/supplier/products/performance" className="text-sky-900 underline-offset-4 hover:underline">
+                {t('catalogAlertPerformance')}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Collection Alert */}
       {showCollection && collection && (
@@ -144,7 +177,7 @@ export default async function SupplierDashboardHome() {
         </Link>
 
         <Link
-          href="/supplier/products"
+          href="/supplier/products?lowStock=1"
           className="group relative overflow-hidden rounded-xl border border-amber-200/80 bg-amber-50/50 p-5 shadow-sm transition hover:shadow-md"
         >
           <div className="flex items-center justify-between">

@@ -18,6 +18,7 @@ export default async function SupplierInventoryInsightsPage({
   searchParams: Promise<{ page?: string; pageSize?: string; filter?: string }>
 }) {
   const t = await getTranslations('InventoryInsightsPage')
+  const tReceive = await getTranslations('ReceiveStock')
   const sp = await searchParams
   const { page, pageSize } = parseListPagination(sp, {
     defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
@@ -70,6 +71,12 @@ export default async function SupplierInventoryInsightsPage({
           className="inline-flex items-center rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:bg-muted"
         >
           {t('manageProducts')}
+        </Link>
+        <Link
+          href="/supplier/inventory/receive"
+          className="inline-flex items-center rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:bg-muted"
+        >
+          {tReceive('title')}
         </Link>
         <Link
           href="/supplier/finance"

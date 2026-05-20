@@ -4,10 +4,14 @@ import { getTranslations } from "next-intl/server";
 import { requireRequestUserId } from "@/lib/auth/request-session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { VARIATION_PUBLIC_COLUMNS } from "@/lib/utils";
+import { listStorefrontAttributeMatrix } from "@/lib/data/products/attributes";
+import { tiersByVariationId } from "@/lib/pricing/resolve-unit-price";
 import { StorefrontCatalog } from "@/components/retailer/storefront-catalog";
 import { RatingBadge } from "@/components/reviews/rating-badge";
 import { ReviewsList } from "@/components/reviews/reviews-list";
 import type { StorefrontVariation } from "@/components/products/product-card";
+import type { ProductAttributeRow } from "@/lib/data/products/attributes";
+import type { PriceTier } from "@/lib/pricing/resolve-unit-price";
 import type { MarketplaceSupplierStorefrontRow } from "@/lib/data/marketplace-suppliers";
 
 type Pack = {
@@ -20,6 +24,7 @@ type Pack = {
     has_variations: boolean;
   };
   variations: StorefrontVariation[];
+  attributes: ProductAttributeRow[];
 };
 
 function toPack(
@@ -37,16 +42,22 @@ function toPack(
     price: number;
     stock_quantity: number;
     min_order_quantity: number;
-  }[]
+  }[],
+  attributes: ProductAttributeRow[],
+  tierMap: Map<string, PriceTier[]>,
+  variationOptionIds: Map<string, string[]>,
 ): Pack {
   return {
     product,
+    attributes,
     variations: vars.map((v) => ({
       id: v.id,
       name: v.name,
       price: Number(v.price),
       stock_quantity: Number(v.stock_quantity),
       min_order_quantity: Number(v.min_order_quantity),
+      priceTiers: tierMap.get(v.id) ?? [],
+      optionIds: variationOptionIds.get(v.id) ?? [],
     })),
   };
 }
@@ -117,6 +128,7 @@ export default async function RetailerSupplierStorefrontPage({
     )
     .eq("supplier_id", supplierId)
     .eq("is_active", true)
+    .eq("catalog_status", "published")
     .order("name", { ascending: true });
 
   const products = productRows ?? [];
@@ -138,11 +150,32 @@ export default async function RetailerSupplierStorefrontPage({
     varsByProduct.set(v.product_id, list);
   }
 
+  const allVariationIds = (variationRows ?? []).map((v) => v.id);
+
+  const [{ data: tierRows }, attributeMatrix] = await Promise.all([
+    allVariationIds.length
+      ? supabase
+          .from("variation_price_tiers")
+          .select("variation_id, min_quantity, unit_price")
+          .in("variation_id", allVariationIds)
+          .order("min_quantity", { ascending: true })
+      : Promise.resolve({ data: [] as { variation_id: string; min_quantity: number; unit_price: number }[] }),
+    listStorefrontAttributeMatrix(productIds),
+  ]);
+
+  const tierMap = tiersByVariationId(tierRows ?? []);
+
   const packs: Pack[] = products
     .map((p) => {
       const vars = varsByProduct.get(p.id) ?? [];
       if (vars.length === 0) return null;
-      return toPack(p, vars);
+      return toPack(
+        p,
+        vars,
+        attributeMatrix.byProduct.get(p.id) ?? [],
+        tierMap,
+        attributeMatrix.variationOptionIds,
+      );
     })
     .filter((x): x is Pack => x !== null);
 

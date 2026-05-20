@@ -103,7 +103,10 @@ export async function getSupplierDashboardStats(): Promise<{ stats: SupplierDash
   const { data: products } = await supabase.from('products').select('id').eq('supplier_id', sid)
   const productIds = (products ?? []).map((p) => p.id)
   let lowStockVariations = 0
-  if (productIds.length) {
+  const { data: lowStockRpc } = await supabase.rpc('supplier_low_stock_sku_count')
+  if (lowStockRpc != null) {
+    lowStockVariations = Number(lowStockRpc)
+  } else if (productIds.length) {
     const { count } = await supabase
       .from('product_variations')
       .select('*', { count: 'exact', head: true })
@@ -225,7 +228,10 @@ export async function getSupplierReportStats(): Promise<{ stats: SupplierReportS
   const { data: products } = await supabase.from('products').select('id').eq('supplier_id', sid)
   const productIds = (products ?? []).map((p) => p.id)
   let lowStockVariations = 0
-  if (productIds.length) {
+  const { data: lowStockRpc } = await supabase.rpc('supplier_low_stock_sku_count')
+  if (lowStockRpc != null) {
+    lowStockVariations = Number(lowStockRpc)
+  } else if (productIds.length) {
     const { count } = await supabase
       .from('product_variations')
       .select('*', { count: 'exact', head: true })

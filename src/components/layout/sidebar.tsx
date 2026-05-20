@@ -1,95 +1,27 @@
 'use client'
 
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { LogOut } from 'lucide-react'
+import { SidebarNavGroup } from '@/components/layout/sidebar-nav-group'
 import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  FileText,
-  CircleDollarSign,
-  BookOpen,
-  BarChart3,
-  TrendingUp,
-  Scale,
-  Store,
-  Search,
-  ShoppingBag,
-  User,
-  LogOut,
-  Wallet,
-  Warehouse,
-  Truck,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { logout } from '@/lib/actions/auth'
-import type { SupplierNavBadges } from '@/lib/supplier-nav-badges'
+  collectNavHrefs,
+  isNavGroup,
+  resolveActiveHref,
+  retailerNav,
+  supplierNav,
+  type NavEntry,
+  type NavItem,
+} from '@/components/layout/sidebar-nav-config'
 import { NavCountBadge } from '@/components/layout/nav-count-badge'
 import { useSupplierNavBadges } from '@/components/layout/use-supplier-nav-badges'
+import { logout } from '@/lib/actions/auth'
+import type { SupplierNavBadges } from '@/lib/supplier-nav-badges'
+import { cn } from '@/lib/utils'
 
 type Role = 'supplier' | 'retailer'
-
-type NavLabelKey =
-  | 'dashboard'
-  | 'products'
-  | 'orders'
-  | 'invoices'
-  | 'payments'
-  | 'depositProofs'
-  | 'ledger'
-  | 'finance'
-  | 'reports'
-  | 'reportsProfit'
-  | 'inventoryInsights'
-  | 'deliveryPersons'
-  | 'tradeTerms'
-  | 'profile'
-  | 'browseSuppliers'
-  | 'search'
-  | 'cart'
-  | 'myOrders'
-
-type NavItem = {
-  href: string
-  labelKey: NavLabelKey
-  icon: React.ComponentType<{ className?: string }>
-  badgeKey?: 'pendingOrders' | 'pendingDeposits'
-}
-
-const supplierNav: NavItem[] = [
-  { href: '/supplier', labelKey: 'dashboard', icon: LayoutDashboard },
-  { href: '/supplier/products', labelKey: 'products', icon: Package },
-  { href: '/supplier/orders', labelKey: 'orders', icon: ShoppingCart, badgeKey: 'pendingOrders' },
-  { href: '/supplier/delivery-persons', labelKey: 'deliveryPersons', icon: Truck },
-  { href: '/supplier/invoices', labelKey: 'invoices', icon: FileText },
-  { href: '/supplier/payments', labelKey: 'payments', icon: CircleDollarSign },
-  {
-    href: '/supplier/payments/deposits',
-    labelKey: 'depositProofs',
-    icon: CircleDollarSign,
-    badgeKey: 'pendingDeposits',
-  },
-  { href: '/supplier/ledger', labelKey: 'ledger', icon: BookOpen },
-  { href: '/supplier/finance', labelKey: 'finance', icon: Wallet },
-  { href: '/supplier/reports', labelKey: 'reports', icon: BarChart3 },
-  { href: '/supplier/reports/profit', labelKey: 'reportsProfit', icon: TrendingUp },
-  { href: '/supplier/inventory-insights', labelKey: 'inventoryInsights', icon: Warehouse },
-  { href: '/supplier/trade-terms', labelKey: 'tradeTerms', icon: Scale },
-  { href: '/supplier/profile', labelKey: 'profile', icon: User },
-]
-
-const retailerNav: NavItem[] = [
-  { href: '/retailer', labelKey: 'dashboard', icon: LayoutDashboard },
-  { href: '/retailer/search', labelKey: 'search', icon: Search },
-  { href: '/retailer/browse', labelKey: 'browseSuppliers', icon: Store },
-  { href: '/retailer/cart', labelKey: 'cart', icon: ShoppingBag },
-  { href: '/retailer/orders', labelKey: 'myOrders', icon: ShoppingCart },
-  { href: '/retailer/invoices', labelKey: 'invoices', icon: FileText },
-  { href: '/retailer/payments', labelKey: 'payments', icon: CircleDollarSign },
-  { href: '/retailer/ledger', labelKey: 'ledger', icon: BookOpen },
-  { href: '/retailer/profile', labelKey: 'profile', icon: User },
-]
 
 type Props = {
   role: Role
@@ -100,53 +32,106 @@ type Props = {
   className?: string
 }
 
+function itemBadgeCount(item: NavItem, liveBadges: SupplierNavBadges | null): number {
+  if (!item.badgeKey || !liveBadges) return 0
+  return item.badgeKey === 'pendingOrders' ? liveBadges.pendingOrders : liveBadges.pendingDeposits
+}
+
+function openGroupsForPath(entries: NavEntry[], pathname: string): Record<string, boolean> {
+  const next: Record<string, boolean> = {}
+  for (const entry of entries) {
+    if (isNavGroup(entry)) {
+      next[entry.id] = resolveActiveHref(pathname, entry.items.map((i) => i.href)) !== null
+    }
+  }
+  return next
+}
+
 export function Sidebar({ role, userName, businessName, supplierBadges, onNavigate, className }: Props) {
   const pathname = usePathname()
   const t = useTranslations('Nav')
-  const items = role === 'supplier' ? supplierNav : retailerNav
+  const entries = role === 'supplier' ? supplierNav : retailerNav
   const liveBadges = useSupplierNavBadges(role === 'supplier' ? (supplierBadges ?? null) : null)
+  const allHrefs = useMemo(() => collectNavHrefs(entries), [entries])
+  const activeHref = resolveActiveHref(pathname, allHrefs)
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => openGroupsForPath(entries, pathname))
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const auto = openGroupsForPath(entries, pathname)
+      const merged = { ...prev }
+      for (const [id, shouldOpen] of Object.entries(auto)) {
+        if (shouldOpen) merged[id] = true
+      }
+      return merged
+    })
+  }, [pathname, entries])
+
+  const toggleGroup = useCallback((id: string) => {
+    setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }))
+  }, [])
 
   return (
     <div className={cn('flex h-full min-h-0 flex-col', className)}>
-      <div className="flex h-14 shrink-0 items-center px-4 sm:px-5">
+      <div className="flex h-14 shrink-0 items-center border-b border-border/60 px-4 sm:px-5">
         <Link
           href={role === 'supplier' ? '/supplier' : '/retailer'}
-          className="text-lg font-semibold tracking-tight text-foreground"
+          className="text-lg font-bold tracking-tight text-foreground"
           onClick={onNavigate}
         >
           {t('brand')}
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2 text-sm sm:px-3">
-        {items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-          const Icon = item.icon
-          const badgeCount =
-            item.badgeKey && liveBadges
-              ? item.badgeKey === 'pendingOrders'
-                ? liveBadges.pendingOrders
-                : liveBadges.pendingDeposits
-              : 0
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3 sm:px-3" aria-label={t('sidebarLabel')}>
+        {entries.map((entry) => {
+          if (isNavGroup(entry)) {
+            return (
+              <SidebarNavGroup
+                key={entry.id}
+                group={entry}
+                pathname={pathname}
+                open={openGroups[entry.id] ?? false}
+                onToggle={() => toggleGroup(entry.id)}
+                liveBadges={liveBadges}
+                onNavigate={onNavigate}
+              />
+            )
+          }
+
+          const isActive = activeHref === entry.href
+          const Icon = entry.icon
+          const badgeCount = itemBadgeCount(entry, liveBadges)
           const badgeLabel =
-            item.badgeKey === 'pendingOrders'
+            entry.badgeKey === 'pendingOrders'
               ? t('badgePendingOrders', { count: badgeCount })
-              : item.badgeKey === 'pendingDeposits'
+              : entry.badgeKey === 'pendingDeposits'
                 ? t('badgePendingDeposits', { count: badgeCount })
                 : ''
+
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={entry.href}
+              href={entry.href}
               onClick={onNavigate}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                isActive && 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground',
+                'flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-sm font-semibold transition-colors',
+                isActive
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 leading-snug">{t(item.labelKey)}</span>
-              {item.badgeKey ? (
+              <span
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                  isActive ? 'bg-primary-foreground/15' : 'bg-muted/80',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1 leading-snug">{t(entry.labelKey)}</span>
+              {entry.badgeKey ? (
                 <NavCountBadge count={badgeCount} label={badgeLabel} active={isActive} />
               ) : null}
             </Link>
@@ -154,15 +139,15 @@ export function Sidebar({ role, userName, businessName, supplierBadges, onNaviga
         })}
       </nav>
 
-      <div className="shrink-0 border-t border-border p-3 sm:p-4">
-        <div className="mb-3 px-1">
-          <p className="truncate text-sm font-medium text-foreground">{userName || t('account')}</p>
+      <div className="shrink-0 border-t border-border bg-muted/20 p-3 sm:p-4">
+        <div className="mb-3 rounded-xl bg-card px-3 py-2.5 shadow-sm ring-1 ring-border/60">
+          <p className="truncate text-sm font-semibold text-foreground">{userName || t('account')}</p>
           <p className="truncate text-xs text-muted-foreground">{businessName || '—'}</p>
         </div>
         <form action={logout}>
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
           >
             <LogOut className="h-4 w-4" />
             {t('signOut')}

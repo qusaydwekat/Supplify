@@ -32,7 +32,7 @@ export function DashboardShell({ role, userName, businessName, supplierBadges, c
 
   return (
     <div className="flex min-h-dvh bg-background">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-border bg-card md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col border-e border-border bg-card md:flex">
         <Sidebar
           role={role}
           userName={userName}
