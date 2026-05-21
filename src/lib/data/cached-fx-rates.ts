@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { supabaseServer } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export type FxRatesSnapshot = {
   defaultCcy: string
@@ -7,7 +7,7 @@ export type FxRatesSnapshot = {
 }
 
 async function loadFxRatesSnapshot(): Promise<FxRatesSnapshot> {
-  const supabase = supabaseServer()
+  const supabase = supabaseAdmin()
   const [{ data: settings }, { data: rates }] = await Promise.all([
     supabase.from('app_settings').select('default_currency').eq('id', 1).maybeSingle(),
     supabase
