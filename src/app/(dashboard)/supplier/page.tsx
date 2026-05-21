@@ -21,8 +21,7 @@ import { getSupplierDashboardStats } from '@/lib/data/supplier-stats'
 import { getSupplierCatalogAlertStats } from '@/lib/data/catalog-alerts'
 import { getSupplierCollectionAlerts } from '@/lib/data/collection-alerts'
 import { formatDateTimeShort, normalizeAppLocale } from '@/lib/format-datetime'
-import { MiniRevenueChart } from '@/components/charts/mini-revenue-chart'
-import { OrderStatusChart } from '@/components/charts/order-status-chart'
+import { MiniRevenueChart, OrderStatusChart } from '@/components/charts/lazy-charts'
 import { OrderStatusBadge } from '@/components/orders/order-status-badge'
 import type { OrderStatus } from '@/lib/validations/order'
 import { FxRatesWidget } from '@/components/fx/fx-rates-widget'
@@ -31,14 +30,16 @@ export default async function SupplierDashboardHome() {
   const t = await getTranslations('DashboardSupplier')
   const tErr = await getTranslations('SupplierDashboard')
   const locale = normalizeAppLocale(await getLocale())
-  const res = await getSupplierDashboardStats()
+  const [res, alertsRes, catalogAlerts] = await Promise.all([
+    getSupplierDashboardStats(),
+    getSupplierCollectionAlerts(),
+    getSupplierCatalogAlertStats(),
+  ])
   if ('error' in res) {
     return <p className="text-sm text-red-600">{tErr('error')}</p>
   }
   const s = res.stats
   const ccy = s.currencyCode
-  const alertsRes = await getSupplierCollectionAlerts()
-  const catalogAlerts = await getSupplierCatalogAlertStats()
   const collection = 'error' in alertsRes ? null : alertsRes
   const catalog = catalogAlerts.stats
   const showCatalogAlerts = catalog.lowStockSkus > 0 || catalog.draftProducts > 0

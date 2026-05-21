@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { ProfitChart } from '@/components/charts/profit-chart'
-import { ProductProfitTable } from '@/components/charts/product-profit-table'
-import { LowMarginAlerts } from '@/components/charts/low-margin-alerts'
+import { ProfitChart, ProductProfitTable, LowMarginAlerts } from '@/components/charts/lazy-charts'
 import { getSupplierProfitReport } from '@/lib/data/profit-analytics'
 import { formatCurrency } from '@/lib/utils'
 

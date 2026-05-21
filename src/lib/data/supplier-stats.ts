@@ -75,50 +75,71 @@ export async function getSupplierDashboardStats(): Promise<{ stats: SupplierDash
   const sid = supplier.id
   const currencyCode = String((supplier as { currency_code?: string }).currency_code ?? 'USD')
 
-  const { data: orders } = await orderRowsNewestFirst(
-    supabase.from('orders').select('id, status, total_price, created_at, retailer_id').eq('supplier_id', sid),
+  const statusCountQueries = ORDER_STATUSES.map((st) =>
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('supplier_id', sid)
+      .eq('status', st),
   )
 
+  const parallelResults = await Promise.all([
+    ...statusCountQueries,
+    orderRowsNewestFirst(
+      supabase
+        .from('orders')
+        .select('id, status, total_price, created_at, retailer_id')
+        .eq('supplier_id', sid),
+    ).limit(5),
+    supabase.from('orders').select('id').eq('supplier_id', sid).eq('status', 'delivered'),
+    supabase.from('invoices').select('order_id').eq('supplier_id', sid),
+    supabase.rpc('supplier_low_stock_sku_count'),
+    supabase.from('ledger_entries').select('retailer_id, type, amount, created_at').eq('supplier_id', sid),
+  ])
+
+  const statusResults = parallelResults.slice(0, ORDER_STATUSES.length) as { count: number | null }[]
+  const recentOrdersRaw = (parallelResults[ORDER_STATUSES.length] as {
+    data: { id: string; status: string; total_price: number | string; created_at: string; retailer_id: string }[] | null
+  }).data
+  const deliveredOrderIds = (parallelResults[ORDER_STATUSES.length + 1] as { data: { id: string }[] | null }).data
+  const invoiceOrderRows = (parallelResults[ORDER_STATUSES.length + 2] as { data: { order_id: string | null }[] | null }).data
+  const lowStockRpc = (parallelResults[ORDER_STATUSES.length + 3] as { data: unknown }).data
+  const ledgerRows = (parallelResults[ORDER_STATUSES.length + 4] as { data: { retailer_id: string; type: string; amount: number | string; created_at: string }[] | null }).data
+
   const ordersByStatus: Partial<Record<OrderStatus, number>> = {}
-  for (const st of ORDER_STATUSES) ordersByStatus[st] = 0
-  for (const row of orders ?? []) {
-    const st = row.status as OrderStatus
-    ordersByStatus[st] = (ordersByStatus[st] ?? 0) + 1
+  for (let i = 0; i < ORDER_STATUSES.length; i++) {
+    const st = ORDER_STATUSES[i]
+    ordersByStatus[st] = statusResults[i].count ?? 0
   }
 
   const pendingOrders = ordersByStatus.pending ?? 0
   const preparingOrders = (ordersByStatus.preparing ?? 0) + (ordersByStatus.shipped ?? 0)
   const deliveredOrders = ordersByStatus.delivered ?? 0
-  const totalOrders = (orders ?? []).length
+  const totalOrders = ORDER_STATUSES.reduce((sum, st) => sum + (ordersByStatus[st] ?? 0), 0)
 
-  const { data: invoiceOrderRows } = await supabase.from('invoices').select('order_id').eq('supplier_id', sid)
   const invoicedOrderIds = new Set(
     (invoiceOrderRows ?? []).map((r) => r.order_id).filter((id): id is string => Boolean(id)),
   )
   let deliveredUninvoicedCount = 0
-  for (const o of orders ?? []) {
-    if (o.status === 'delivered' && !invoicedOrderIds.has(o.id)) deliveredUninvoicedCount += 1
+  for (const o of deliveredOrderIds ?? []) {
+    if (!invoicedOrderIds.has(o.id)) deliveredUninvoicedCount += 1
   }
 
-  const { data: products } = await supabase.from('products').select('id').eq('supplier_id', sid)
-  const productIds = (products ?? []).map((p) => p.id)
   let lowStockVariations = 0
-  const { data: lowStockRpc } = await supabase.rpc('supplier_low_stock_sku_count')
   if (lowStockRpc != null) {
     lowStockVariations = Number(lowStockRpc)
-  } else if (productIds.length) {
-    const { count } = await supabase
-      .from('product_variations')
-      .select('*', { count: 'exact', head: true })
-      .in('product_id', productIds)
-      .lt('stock_quantity', 10)
-    lowStockVariations = count ?? 0
+  } else {
+    const { data: products } = await supabase.from('products').select('id').eq('supplier_id', sid)
+    const productIds = (products ?? []).map((p) => p.id)
+    if (productIds.length) {
+      const { count } = await supabase
+        .from('product_variations')
+        .select('*', { count: 'exact', head: true })
+        .in('product_id', productIds)
+        .lt('stock_quantity', 10)
+      lowStockVariations = count ?? 0
+    }
   }
-
-  const { data: ledgerRows } = await supabase
-    .from('ledger_entries')
-    .select('retailer_id, type, amount, created_at')
-    .eq('supplier_id', sid)
 
   let totalInvoiced = 0
   let totalCollected = 0
@@ -160,7 +181,7 @@ export async function getSupplierDashboardStats(): Promise<{ stats: SupplierDash
     }
   })
 
-  const recent = (orders ?? []).slice(0, 5)
+  const recent = recentOrdersRaw ?? []
 
   const retailerIds = [...new Set(recent.map((o) => o.retailer_id))]
   const { data: profiles } = retailerIds.length

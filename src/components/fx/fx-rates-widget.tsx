@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server'
-import { supabaseServer } from '@/lib/supabase/server'
+import { getCachedFxRatesSnapshot } from '@/lib/data/cached-fx-rates'
 
 /**
  * Compact PMA-style daily FX panel — shows the most relevant local pairs based on
@@ -8,24 +8,7 @@ import { supabaseServer } from '@/lib/supabase/server'
  */
 export async function FxRatesWidget() {
   const t = await getTranslations('FxRatesWidget')
-  const supabase = supabaseServer()
-
-  const [{ data: settings }, { data: rates }] = await Promise.all([
-    supabase.from('app_settings').select('default_currency').eq('id', 1).maybeSingle(),
-    supabase
-      .from('currency_rates')
-      .select('currency_code, to_default_multiplier, updated_at')
-      .order('currency_code'),
-  ])
-
-  const defaultCcy = String(settings?.default_currency ?? 'USD').toUpperCase()
-  const rows = (rates ?? [])
-    .map((r) => ({
-      code: String(r.currency_code).toUpperCase(),
-      mult: Number(r.to_default_multiplier),
-      updatedAt: r.updated_at as string,
-    }))
-    .filter((r) => r.code !== defaultCcy)
+  const { defaultCcy, rows } = await getCachedFxRatesSnapshot()
 
   const updatedLatest = rows
     .map((r) => r.updatedAt)

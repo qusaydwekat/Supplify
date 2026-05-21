@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import type { SupplierNavBadges } from '@/lib/supplier-nav-badges'
 
@@ -26,7 +25,6 @@ async function fetchCounts(supplierId: string): Promise<Pick<SupplierNavBadges, 
 }
 
 export function useSupplierNavBadges(initial: SupplierNavBadges | null) {
-  const pathname = usePathname()
   const [badges, setBadges] = useState(initial)
 
   const refresh = useCallback(async () => {
@@ -38,10 +36,6 @@ export function useSupplierNavBadges(initial: SupplierNavBadges | null) {
   useEffect(() => {
     setBadges(initial)
   }, [initial])
-
-  useEffect(() => {
-    void refresh()
-  }, [pathname, refresh])
 
   useEffect(() => {
     if (!initial?.supplierId) return

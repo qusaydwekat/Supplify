@@ -210,7 +210,16 @@ export async function getSupplierReportAnalytics(): Promise<
     .eq('supplier_id', sid)
     .neq('status', 'paid')
 
-  const { data: paySums } = await supabase.from('payments').select('invoice_id, amount')
+  const { data: paySums } =
+    (invs ?? []).length > 0
+      ? await supabase
+          .from('payments')
+          .select('invoice_id, amount')
+          .in(
+            'invoice_id',
+            (invs ?? []).map((inv) => inv.id),
+          )
+      : { data: [] as { invoice_id: string; amount: number | string }[] }
   const paidByInvoice = new Map<string, number>()
   for (const p of paySums ?? []) {
     paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount))

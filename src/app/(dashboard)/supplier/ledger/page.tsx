@@ -78,6 +78,9 @@ export default async function SupplierLedgerPage({
 
   const stmtParams = new URLSearchParams();
   if (partnerId) stmtParams.set("partnerId", partnerId);
+  if (filters.from) stmtParams.set("from", filters.from);
+  if (filters.to) stmtParams.set("to", filters.to);
+  if (filters.type) stmtParams.set("type", filters.type);
   const statementHref = stmtParams.toString()
     ? `/api/ledger/statement?${stmtParams}`
     : "/api/ledger/statement";

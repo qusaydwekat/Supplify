@@ -76,6 +76,19 @@ function roundMoney(n: number) {
   return Math.round(n * 100) / 100
 }
 
+/** Newest-first display; running balances are computed chronologically then reversed. */
+function reverseLedgerDisplayOrder(rows: LedgerListRow[]): LedgerListRow[] {
+  return rows.length <= 1 ? rows : [...rows].reverse()
+}
+
+function newestFirstRange(totalCount: number, page: number, pageSize: number) {
+  const totalPages = totalPagesFromCount(totalCount, pageSize)
+  const safePage = clampPageToTotal(page, totalPages)
+  const from = Math.max(0, totalCount - safePage * pageSize)
+  const to = Math.min(totalCount - 1, totalCount - (safePage - 1) * pageSize - 1)
+  return { from, to, page: safePage, totalPages }
+}
+
 function totalsFromSkinny(rows: { amount: string | number; type: string }[]) {
   let totalInvoiced = 0
   let totalCollected = 0
@@ -225,10 +238,21 @@ export async function getSupplierLedgerPageData(
     .eq('supplier_id', supplier.id)
 
   const retailerIds = [...new Set((allEntries ?? []).map((e) => e.retailer_id))]
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('user_id, business_name, name')
-    .in('user_id', retailerIds)
+
+  let skinnyQ = supabase.from('ledger_entries').select('amount, type').eq('supplier_id', supplier.id)
+  if (retailerId) skinnyQ = skinnyQ.eq('retailer_id', retailerId)
+  skinnyQ = applyDateTypeFilters(skinnyQ, filters)
+
+  const [{ data: profiles }, { data: skinny, error: skinnyErr }, aging, retailerBalancesAll] = await Promise.all([
+    retailerIds.length
+      ? supabase.from('profiles').select('user_id, business_name, name').in('user_id', retailerIds)
+      : Promise.resolve({ data: [] as { user_id: string; business_name: string | null; name: string | null }[] }),
+    skinnyQ,
+    getSupplierAgingBuckets(supplier.id, retailerId),
+    getSupplierRetailerBalances(supplier.id),
+  ])
+  if (skinnyErr) return { error: skinnyErr.message }
+  const { netBalance, totalInvoiced, totalCollected } = totalsFromSkinny(skinny ?? [])
 
   const profMap = new Map((profiles ?? []).map((p) => [p.user_id, p]))
   const filterOptions: LedgerFilterOption[] = retailerIds.map((rid) => ({
@@ -237,15 +261,6 @@ export async function getSupplierLedgerPageData(
   }))
   filterOptions.sort((a, b) => a.label.localeCompare(b.label))
 
-  let skinnyQ = supabase.from('ledger_entries').select('amount, type').eq('supplier_id', supplier.id)
-  if (retailerId) skinnyQ = skinnyQ.eq('retailer_id', retailerId)
-  skinnyQ = applyDateTypeFilters(skinnyQ, filters)
-  const { data: skinny, error: skinnyErr } = await skinnyQ
-  if (skinnyErr) return { error: skinnyErr.message }
-  const { netBalance, totalInvoiced, totalCollected } = totalsFromSkinny(skinny ?? [])
-
-  const aging = await getSupplierAgingBuckets(supplier.id, retailerId)
-  const retailerBalancesAll = await getSupplierRetailerBalances(supplier.id)
   let retailerBalancesView: RetailerBalance[] = retailerBalancesAll
   let retailerBalancesPagination: LedgerPagination | undefined
   if (retailerBalancesPaging != null) {
@@ -324,7 +339,7 @@ export async function getSupplierLedgerPageData(
       rowsAsc.push(buildRow(e, running, p?.business_name || p?.name || 'Retailer', noteMap))
     }
     return {
-      rows: rowsAsc, netBalance, totalInvoiced, totalCollected,
+      rows: reverseLedgerDisplayOrder(rowsAsc), netBalance, totalInvoiced, totalCollected,
       filterOptions, activeFilterId: retailerId,
       displayCurrency: supplierCurrency,
       aging,
@@ -342,30 +357,29 @@ export async function getSupplierLedgerPageData(
   const { count: totalCountRaw, error: countErr } = await countQ
   if (countErr) return { error: countErr.message }
   const totalCount = totalCountRaw ?? 0
-  const totalPages = totalPagesFromCount(totalCount, pageSize)
+  const { from, to, page: safePage, totalPages } = newestFirstRange(totalCount, page, pageSize)
 
   if (totalCount === 0) {
     return {
       rows: [], netBalance, totalInvoiced, totalCollected,
       filterOptions, activeFilterId: retailerId,
       displayCurrency: supplierCurrency,
-      pagination: { page, pageSize, totalCount, totalPages },
+      pagination: { page: safePage, pageSize, totalCount, totalPages },
       aging,
       retailerBalances: retailerBalancesView,
       retailerBalancesPagination,
     }
   }
 
-  const skip = (page - 1) * pageSize
   let priorSum = 0
-  if (skip > 0) {
+  if (from > 0) {
     let priorQ = supabase
       .from('ledger_entries')
       .select('amount')
       .eq('supplier_id', supplier.id)
       .order('created_at', { ascending: true })
       .order('id', { ascending: true })
-      .limit(skip)
+      .limit(from)
     if (retailerId) priorQ = priorQ.eq('retailer_id', retailerId)
     priorQ = applyDateTypeFilters(priorQ, filters)
     const { data: priorRows, error: pErr } = await priorQ
@@ -373,8 +387,6 @@ export async function getSupplierLedgerPageData(
     priorSum = (priorRows ?? []).reduce((s, r) => s + Number(r.amount), 0)
   }
 
-  const from = skip
-  const to = skip + pageSize - 1
   const { data: entries, error } = await fullQ.range(from, to)
   if (error) return { error: error.message }
 
@@ -388,10 +400,10 @@ export async function getSupplierLedgerPageData(
   }
 
   return {
-    rows: rowsAsc, netBalance, totalInvoiced, totalCollected,
+    rows: reverseLedgerDisplayOrder(rowsAsc), netBalance, totalInvoiced, totalCollected,
     filterOptions, activeFilterId: retailerId,
     displayCurrency: supplierCurrency,
-    pagination: { page, pageSize, totalCount, totalPages },
+    pagination: { page: safePage, pageSize, totalCount, totalPages },
     aging,
     retailerBalances: retailerBalancesView,
     retailerBalancesPagination,
@@ -476,7 +488,7 @@ export async function getRetailerLedgerPageData(
     }
     const enrichedRows = await enrichLedgerRowsWithPaymentDetails(supabase, rowsAsc)
     return {
-      rows: enrichedRows, netBalance, totalInvoiced, totalCollected,
+      rows: reverseLedgerDisplayOrder(enrichedRows), netBalance, totalInvoiced, totalCollected,
       filterOptions, activeFilterId: supplierId, displayCurrency,
     }
   }
@@ -489,34 +501,31 @@ export async function getRetailerLedgerPageData(
   const { count: totalCountRaw, error: countErr } = await countQ
   if (countErr) return { error: countErr.message }
   const totalCount = totalCountRaw ?? 0
-  const totalPages = totalPagesFromCount(totalCount, pageSize)
+  const { from, to, page: safePage, totalPages } = newestFirstRange(totalCount, page, pageSize)
 
   if (totalCount === 0) {
     return {
       rows: [], netBalance, totalInvoiced, totalCollected,
       filterOptions, activeFilterId: supplierId, displayCurrency,
-      pagination: { page, pageSize, totalCount, totalPages },
+      pagination: { page: safePage, pageSize, totalCount, totalPages },
     }
   }
 
-  const skip = (page - 1) * pageSize
   let priorSum = 0
-  if (skip > 0) {
+  if (from > 0) {
     let priorQ = supabase
       .from('ledger_entries')
       .select('amount')
       .eq('retailer_id', user.id)
       .order('created_at', { ascending: true })
       .order('id', { ascending: true })
-      .limit(skip)
+      .limit(from)
     if (supplierId) priorQ = priorQ.eq('supplier_id', supplierId)
     const { data: priorRows, error: pErr } = await priorQ
     if (pErr) return { error: pErr.message }
     priorSum = (priorRows ?? []).reduce((s, r) => s + Number(r.amount), 0)
   }
 
-  const from = skip
-  const to = skip + pageSize - 1
   const { data: entries, error } = await fullQ.range(from, to)
   if (error) return { error: error.message }
 
@@ -538,9 +547,9 @@ export async function getRetailerLedgerPageData(
   const enrichedRows = await enrichLedgerRowsWithPaymentDetails(supabase, rowsAsc)
 
   return {
-    rows: enrichedRows, netBalance, totalInvoiced, totalCollected,
+    rows: reverseLedgerDisplayOrder(enrichedRows), netBalance, totalInvoiced, totalCollected,
     filterOptions, activeFilterId: supplierId, displayCurrency,
-    pagination: { page, pageSize, totalCount, totalPages },
+    pagination: { page: safePage, pageSize, totalCount, totalPages },
   }
 }
 

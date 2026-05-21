@@ -70,26 +70,29 @@ export async function getSupplierTradeTermsPartners(): Promise<
     ]),
   )
 
-  const out: TradeTermsPartnerRow[] = []
-  for (const rid of retailerIds) {
-    const p = profMap.get(rid)
-    const terms = termMap.get(rid)
-    const ledger_balance = await sumLedgerBalance(supabase, supplier.id, rid)
-    const open_uninvoiced = await sumUninvoicedOpenOrders(supabase, supplier.id, rid)
-    const overdue_balance = await sumOverdueOpenBalance(supabase, supplier.id, rid)
-    out.push({
-      retailer_id: rid,
-      business_name: p?.business_name || p?.name || 'Retailer',
-      ledger_balance,
-      open_uninvoiced,
-      overdue_balance,
-      credit_limit: terms?.credit_limit ?? null,
-      payment_terms_days: terms?.payment_terms_days ?? 30,
-      grace_days: terms?.grace_days ?? 0,
-      blocked: terms?.blocked ?? false,
-      credit_enforcement_mode: terms?.credit_enforcement_mode === 'warn' ? 'warn' : 'block',
-    })
-  }
+  const out: TradeTermsPartnerRow[] = await Promise.all(
+    retailerIds.map(async (rid) => {
+      const p = profMap.get(rid)
+      const terms = termMap.get(rid)
+      const [ledger_balance, open_uninvoiced, overdue_balance] = await Promise.all([
+        sumLedgerBalance(supabase, supplier.id, rid),
+        sumUninvoicedOpenOrders(supabase, supplier.id, rid),
+        sumOverdueOpenBalance(supabase, supplier.id, rid),
+      ])
+      return {
+        retailer_id: rid,
+        business_name: p?.business_name || p?.name || 'Retailer',
+        ledger_balance,
+        open_uninvoiced,
+        overdue_balance,
+        credit_limit: terms?.credit_limit ?? null,
+        payment_terms_days: terms?.payment_terms_days ?? 30,
+        grace_days: terms?.grace_days ?? 0,
+        blocked: terms?.blocked ?? false,
+        credit_enforcement_mode: terms?.credit_enforcement_mode === 'warn' ? 'warn' : 'block',
+      } satisfies TradeTermsPartnerRow
+    }),
+  )
 
   out.sort((a, b) => a.business_name.localeCompare(b.business_name))
   return { partners: out, currencyCode }

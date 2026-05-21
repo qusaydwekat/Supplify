@@ -8,6 +8,8 @@ import {
   resetPasswordSchema,
   retailerRegisterStep1Schema,
   retailerCompleteRegistrationSchema,
+  retailerPasswordResetPhoneSchema,
+  retailerPasswordResetCompleteSchema,
 } from '@/lib/validations/auth'
 import { isMarketplaceCategorySlug } from '@/lib/supplier-marketplace-categories'
 import { supabaseServer } from '@/lib/supabase/server'
@@ -181,6 +183,65 @@ export async function requestPasswordReset(input: unknown) {
     redirectTo: `${site}/auth/callback?next=${encodeURIComponent('/reset-password')}`,
   })
   if (error) return { error: error.message }
+  return { error: null }
+}
+
+/** Retailer password reset step 1: SMS OTP to an existing phone auth user (no new sign-ups). */
+export async function sendRetailerPasswordResetOtp(input: unknown) {
+  const parsed = retailerPasswordResetPhoneSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: zodErrorMessage(parsed.error) }
+  }
+
+  const supabase = supabaseServer()
+  const { error } = await supabase.auth.signInWithOtp({
+    phone: parsed.data.phone,
+    options: {
+      shouldCreateUser: false,
+      channel: 'sms',
+    },
+  })
+
+  // Avoid account enumeration — same response whether or not the number exists.
+  if (error) {
+    const msg = error.message.toLowerCase()
+    if (msg.includes('signups not allowed') || msg.includes('user not found')) {
+      return { error: null }
+    }
+    return { error: error.message }
+  }
+  return { error: null }
+}
+
+/** Retailer password reset step 2: verify SMS OTP and set a new password. */
+export async function completeRetailerPasswordReset(input: unknown) {
+  const parsed = retailerPasswordResetCompleteSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: zodErrorMessage(parsed.error) }
+  }
+
+  const { phone, token, password } = parsed.data
+  const supabase = supabaseServer()
+
+  const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+    phone,
+    token,
+    type: 'sms',
+  })
+  if (otpError) return { error: otpError.message }
+  if (!otpData.user) return { error: 'Verification failed' }
+
+  const admin = supabaseAdmin()
+  const { data: userRow } = await admin.from('users').select('role').eq('id', otpData.user.id).maybeSingle()
+  if (userRow?.role !== 'retailer') {
+    await supabase.auth.signOut()
+    return { error: 'NOT_RETAILER_PHONE' }
+  }
+
+  const { error: pwError } = await supabase.auth.updateUser({ password })
+  if (pwError) return { error: pwError.message }
+
+  await supabase.auth.signOut()
   return { error: null }
 }
 

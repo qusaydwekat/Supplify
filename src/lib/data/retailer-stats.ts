@@ -23,33 +23,59 @@ export async function getRetailerDashboardStats(): Promise<{ stats: RetailerDash
   const conv = await loadCurrencyConversionState(supabase)
   const displayCurrency = 'error' in conv ? 'USD' : conv.defaultCurrency
 
-  const { count: pendingOrders } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true })
-    .eq('retailer_id', user.id)
-    .in('status', ['pending', 'modified'])
+  const [
+    { count: pendingOrders },
+    { count: issuedCount },
+    { count: partialCount },
+    { count: overdueCount },
+    { count: paidCount },
+    { count: pendingDepositProofs },
+    { data: ledgerRows },
+    { data: recent },
+  ] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('retailer_id', user.id)
+      .in('status', ['pending', 'modified']),
+    supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('retailer_id', user.id)
+      .eq('status', 'issued'),
+    supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('retailer_id', user.id)
+      .eq('status', 'partial'),
+    supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('retailer_id', user.id)
+      .eq('status', 'overdue'),
+    supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('retailer_id', user.id)
+      .eq('status', 'paid'),
+    supabase
+      .from('payment_deposit_proofs')
+      .select('*', { count: 'exact', head: true })
+      .eq('retailer_id', user.id)
+      .eq('status', 'pending'),
+    supabase.from('ledger_entries').select('amount, type, created_at').eq('retailer_id', user.id),
+    orderRowsNewestFirst(
+      supabase.from('orders').select('id, supplier_id, total_price, status, created_at').eq('retailer_id', user.id),
+    ).limit(5),
+  ])
 
-  const { data: invStatusRows } = await supabase.from('invoices').select('status').eq('retailer_id', user.id)
-  const invoiceStatusCounts = { issued: 0, partial: 0, overdue: 0, paid: 0 }
-  for (const r of invStatusRows ?? []) {
-    const st = String((r as { status: string }).status)
-    if (st === 'issued') invoiceStatusCounts.issued += 1
-    else if (st === 'partial') invoiceStatusCounts.partial += 1
-    else if (st === 'overdue') invoiceStatusCounts.overdue += 1
-    else if (st === 'paid') invoiceStatusCounts.paid += 1
+  const invoiceStatusCounts = {
+    issued: issuedCount ?? 0,
+    partial: partialCount ?? 0,
+    overdue: overdueCount ?? 0,
+    paid: paidCount ?? 0,
   }
   const openInvoices = invoiceStatusCounts.issued + invoiceStatusCounts.partial + invoiceStatusCounts.overdue
-
-  const { count: pendingDepositProofs } = await supabase
-    .from('payment_deposit_proofs')
-    .select('*', { count: 'exact', head: true })
-    .eq('retailer_id', user.id)
-    .eq('status', 'pending')
-
-  const { data: ledgerRows } = await supabase
-    .from('ledger_entries')
-    .select('amount, type, created_at')
-    .eq('retailer_id', user.id)
 
   const balanceOwing = Math.round((ledgerRows ?? []).reduce((s, r) => s + Number((r as any).amount), 0) * 100) / 100
 
@@ -83,11 +109,7 @@ export async function getRetailerDashboardStats(): Promise<{ stats: RetailerDash
   })
 
   // Recent orders (last 5) with supplier business name
-  const { data: recent } = await orderRowsNewestFirst(
-    supabase.from('orders').select('id, supplier_id, total_price, status, created_at').eq('retailer_id', user.id),
-  ).limit(5)
-
-  const supplierIds = [...new Set((recent ?? []).map((o: any) => o.supplier_id))]
+  const supplierIds = [...new Set((recent ?? []).map((o: { supplier_id: string }) => o.supplier_id))]
   const { data: suppliers } = supplierIds.length
     ? await supabase.from('suppliers').select('id, user_id').in('id', supplierIds)
     : { data: [] as { id: string; user_id: string }[] }

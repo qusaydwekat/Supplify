@@ -108,6 +108,26 @@ export function createForgotPasswordRequestSchema(t?: V) {
   })
 }
 
+export function createRetailerPasswordResetPhoneSchema(t?: V) {
+  return z.object({
+    phone: z.string().trim().regex(e164Regex, v(t, 'invalidPhone')),
+  })
+}
+
+export function createRetailerPasswordResetCompleteSchema(t?: V) {
+  return z
+    .object({
+      phone: z.string().trim().regex(e164Regex, v(t, 'invalidPhone')),
+      token: z.string().regex(/^\d{6}$/, v(t, 'invalidCode')),
+      password: z.string().min(8, v(t, 'passwordMin')),
+      confirmPassword: z.string().min(8, v(t, 'passwordMin')),
+    })
+    .refine((val) => val.password === val.confirmPassword, {
+      message: v(t, 'passwordsNoMatch'),
+      path: ['confirmPassword'],
+    })
+}
+
 export function createResetPasswordSchema(t?: V) {
   return z
     .object({
@@ -126,6 +146,8 @@ export const retailerRegisterStep1Schema = createRetailerRegisterStep1Schema()
 export const retailerVerifySchema = createRetailerVerifySchema()
 export const retailerCompleteRegistrationSchema = createRetailerCompleteRegistrationSchema()
 export const forgotPasswordRequestSchema = createForgotPasswordRequestSchema()
+export const retailerPasswordResetPhoneSchema = createRetailerPasswordResetPhoneSchema()
+export const retailerPasswordResetCompleteSchema = createRetailerPasswordResetCompleteSchema()
 export const resetPasswordSchema = createResetPasswordSchema()
 
 export type LoginInput = z.infer<typeof loginSchema>
@@ -135,6 +157,8 @@ export type RetailerRegisterStep1Input = z.infer<typeof retailerRegisterStep1Sch
 export type RetailerVerifyInput = z.infer<typeof retailerVerifySchema>
 export type RetailerCompleteRegistrationInput = z.infer<typeof retailerCompleteRegistrationSchema>
 export type ForgotPasswordRequestInput = z.infer<typeof forgotPasswordRequestSchema>
+export type RetailerPasswordResetPhoneInput = z.infer<typeof retailerPasswordResetPhoneSchema>
+export type RetailerPasswordResetCompleteInput = z.infer<typeof retailerPasswordResetCompleteSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 
 /** @deprecated use supplierRegisterSchema */

@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "12mb",
     },
+    optimizePackageImports: ["recharts", "lucide-react"],
   },
   // Keep a single Node copy of react-pdf (avoids Font.register vs renderToBuffer using different stores).
   serverExternalPackages: [
